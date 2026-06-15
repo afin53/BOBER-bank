@@ -103,12 +103,14 @@
     </div>
 
     <script>
-        // Ініціалізація вашого Supabase проєкту
+        // Налаштування проєкту
         const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
         const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // ВИПРАВЛЕНО: Правильне створення клієнта через глобальний об'єкт бібліотеки
+        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Перемикач вікон
+        // Перемикач вікон (тепер точно спрацює, бо скрипт вище не падає)
         function toggleForms(target) {
             if (target === 'login') {
                 document.getElementById('register-box').classList.add('hidden');
@@ -119,7 +121,7 @@
             }
         }
 
-        // РЕЄСТРАЦІЯ (Вставка в таблицю passcodes)
+        // РЕЄСТРАЦІЯ
         async function registerUser() {
             const loginInput = document.getElementById('reg-login').value.trim();
             const passInput = document.getElementById('reg-password').value.trim();
@@ -129,47 +131,60 @@
                 return;
             }
 
-            // Відправляємо дані в Supabase
-            const { data, error } = await supabase
-                .from('passcodes')
-                .insert([{ login: loginInput, password: passInput }]);
+            try {
+                const { data, error } = await supabase
+                    .from('passcodes')
+                    .insert([{ login: loginInput, password: passInput }]);
 
-            if (error) {
-                alert("Помилка бази даних: " + error.message);
-            } else {
-                alert("Реєстрація успішна! Тепер увійдіть.");
-                toggleForms('login');
+                if (error) {
+                    alert("Помилка Supabase: " + error.message);
+                } else {
+                    alert("Реєстрація успішна! Тепер увійдiть.");
+                    toggleForms('login');
+                }
+            } catch (err) {
+                alert("Критична помилка запиту: " + err.message);
+                console.error(err);
             }
         }
 
-        // ВХІД (Пошук логіна і пароля)
+        // ВХІД
         async function loginUser() {
             const loginIn = document.getElementById('login-username').value.trim();
             const passIn = document.getElementById('login-password').value.trim();
 
-            // Перевіряємо збіг у базі даних
-            const { data, error } = await supabase
-                .from('passcodes')
-                .select('*')
-                .eq('login', loginIn)
-                .eq('password', passIn);
-
-            if (error) {
-                alert("Помилка підключення: " + error.message);
+            if (!loginIn || !passIn) {
+                alert("Введіть логін та пароль!");
                 return;
             }
 
-            if (data && data.length > 0) {
-                alert("Вхід успішний!");
-                document.getElementById('user-display').innerText = loginIn;
-                document.getElementById('login-box').classList.add('hidden');
-                document.getElementById('main-bank').classList.remove('hidden');
-            } else {
-                alert("Неправильний логін або пароль! Спробуй ще раз.");
+            try {
+                const { data, error } = await supabase
+                    .from('passcodes')
+                    .select('*')
+                    .eq('login', loginIn)
+                    .eq('password', passIn);
+
+                if (error) {
+                    alert("Помилка бази даних: " + error.message);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    alert("Вхід успішний!");
+                    document.getElementById('user-display').innerText = loginIn;
+                    document.getElementById('login-box').classList.add('hidden');
+                    document.getElementById('main-bank').classList.remove('hidden');
+                } else {
+                    alert("Неправильний логін або пароль!");
+                }
+            } catch (err) {
+                alert("Не вдалося підключитися до бази: " + err.message);
+                console.error(err);
             }
         }
 
-        // 10-секундний таймер-тролінг
+        // Таймер
         function startLoading() {
             document.getElementById('buy-btn').classList.add('hidden');
             document.getElementById('loading-section').classList.remove('hidden');
