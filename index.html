@@ -103,14 +103,13 @@
     </div>
 
     <script>
-        // Налаштування проєкту
         const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
         const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
         
-        // ВИПРАВЛЕНО: Правильне створення клієнта через глобальний об'єкт бібліотеки
-        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // ЗМІНЕНО НАЗВУ: Використовуємо window.supabase для ініціалізації, щоб не було конфліктів
+        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Перемикач вікон (тепер точно спрацює, бо скрипт вище не падає)
+        // Перемикач вікон
         function toggleForms(target) {
             if (target === 'login') {
                 document.getElementById('register-box').classList.add('hidden');
@@ -132,14 +131,15 @@
             }
 
             try {
-                const { data, error } = await supabase
+                // Виклик через нову змінну mySupabase
+                const { data, error } = await mySupabase
                     .from('passcodes')
                     .insert([{ login: loginInput, password: passInput }]);
 
                 if (error) {
                     alert("Помилка Supabase: " + error.message);
                 } else {
-                    alert("Реєстрація успішна! Тепер увійдiть.");
+                    alert("Реєстрація успішна! Тепер увійдіть.");
                     toggleForms('login');
                 }
             } catch (err) {
@@ -159,7 +159,8 @@
             }
 
             try {
-                const { data, error } = await supabase
+                // Виклик через нову змінну mySupabase
+                const { data, error } = await mySupabase
                     .from('passcodes')
                     .select('*')
                     .eq('login', loginIn)
