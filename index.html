@@ -52,7 +52,7 @@
 
         .hidden { display: none !important; }
         
-        input {
+        input, select {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -77,13 +77,32 @@
         button:hover { background-color: #e08b14; }
 
         .switch-link { margin-top: 15px; font-size: 0.9rem; color: #ff9f1c; cursor: pointer; text-decoration: underline; }
+        
+        /* Стилі для карток товарів у магазині */
+        .shop-item {
+            background-color: #4d3120;
+            border: 2px solid #ff9f1c;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .shop-item img {
+            width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        .shop-item h3 { margin: 5px 0; }
+        .price-tag { color: #4edf7a; font-weight: bold; font-size: 1.2rem; }
+
         .bank-image { width: 100%; max-width: 250px; border-radius: 8px; margin-bottom: 15px; border: 3px solid #ff9f1c; cursor: pointer; transition: transform 0.1s; }
         .bank-image:active { transform: scale(0.95); }
 
         .loader { border: 6px solid #3f3f50; border-top: 6px solid #ff9f1c; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        #status-message { font-weight: bold; font-size: 1.1rem; color: #ff4d4d; margin-top: 15px; }
+        #status-message, #shop-status-message { font-weight: bold; font-size: 1.1rem; color: #ff4d4d; margin-top: 15px; }
         .bomzh-text { font-weight: bold; font-style: italic; margin-top: 10px; }
 
         .menu-btn {
@@ -134,6 +153,7 @@
             <li onclick="showSection('balance-sec')">💰 Баланс</li>
             <li onclick="showSection('card-sec')">💳 Замовити картку</li>
             <li onclick="showSection('job-sec')">🔨 Робота (Клікер)</li>
+            <li onclick="showSection('shop-sec')">🛒 Магазин Бобра</li>
         </ul>
     </div>
 
@@ -183,6 +203,62 @@
         <h3>Зароблено всього: <span id="clicker-money">0.00</span> $</h3>
     </div>
 
+    <div id="shop-sec" class="container hidden bank-section">
+        <h2>🛒 Магазин Бобра</h2>
+        <p>Купуй елітну боброву нерухомість та напої!</p>
+
+        <div id="shop-items-container">
+            <div class="shop-item">
+                <img src="sarai.png" alt="Сарай">
+                <h3>Елітний Сарай</h3>
+                <p class="price-tag">10.00 $</p>
+                <button onclick="buyProduct('Елітний Сарай', 10.00)">Купити Сарай</button>
+            </div>
+
+            <div class="shop-item">
+                <img src="kvart.png" alt="Квартира">
+                <h3>Люкс Квартира</h3>
+                <p class="price-tag">50.00 $</p>
+                <button onclick="buyProduct('Люкс Квартира', 50.00)">Купити Квартиру</button>
+            </div>
+
+            <div class="shop-item">
+                <img src="bobr.png" alt="Квас">
+                <h3>Бобровий Квас (0.5л)</h3>
+                <p class="price-tag">8.00 $</p>
+                <button onclick="buyProduct('Бобровий Квас', 8.00)">Купити Квас</button>
+            </div>
+        </div>
+
+        <div id="shop-loading" class="hidden">
+            <div class="loader"></div>
+            <p id="shop-loading-text">З'єднюємося з магазином...</p>
+        </div>
+
+        <div id="shop-delivery" class="hidden">
+            <h3>📦 Оформлення бобро-доставки</h3>
+            <p>Ви купуєте: <span id="delivery-item-name" style="color:#ff9f1c; font-weight:bold;"></span></p>
+            
+            <label>Вибір місця видачі:</label>
+            <select id="delivery-method">
+                <option value="Нова Пошта">Нова Пошта</option>
+                <option value="Укр Пошта">Укр Пошта</option>
+                <option value="Бобр Шопс">Бобр Шопс</option>
+            </select>
+
+            <label>Місце призначення:</label>
+            <select id="delivery-destination">
+                <option value="Україна">Україна</option>
+                <option value="Бобростік">Бобростік</option>
+                <option value="Бобренятко">Бобренятко</option>
+            </select>
+
+            <button onclick="confirmDelivery()">Оформити замовлення</button>
+        </div>
+
+        <div id="shop-status-message"></div>
+    </div>
+
     <script>
         const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
         const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
@@ -190,6 +266,8 @@
 
         let currentGlobalUser = "";
         let currentGlobalMoney = 0.0;
+        let selectedProduct = "";
+        let selectedPrice = 0;
 
         function toggleForms(target) {
             if (target === 'login') {
@@ -210,6 +288,15 @@
             const sections = document.querySelectorAll('.bank-section');
             sections.forEach(sec => sec.classList.add('hidden'));
             document.getElementById(sectionId).classList.remove('hidden');
+            
+            // Скидаємо стан магазину при поверненні на вкладку
+            if(sectionId === 'shop-sec') {
+                document.getElementById('shop-items-container').classList.remove('hidden');
+                document.getElementById('shop-loading').classList.add('hidden');
+                document.getElementById('shop-delivery').classList.add('hidden');
+                document.getElementById('shop-status-message').innerText = "";
+            }
+            
             toggleSidebar(false);
         }
 
@@ -326,13 +413,64 @@
             document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
             updateStatusText();
 
-            const { error } = await mySupabase
+            await mySupabase
                 .from('user_money')
                 .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
-                
-            if(error) console.error("Помилка збереження грошей: ", error.message);
         }
 
+        // КУПІВЛЯ В МАГАЗИНІ
+        async function buyProduct(name, price) {
+            if (currentGlobalMoney < price) {
+                document.getElementById('shop-status-message').innerText = "У вас недостатньо бобро-баксів! Ідіть працювати на лісоповал. 🔨";
+                return;
+            }
+
+            selectedProduct = name;
+            selectedPrice = price;
+
+            // Ховаємо вітрину, вмикаємо завантаження
+            document.getElementById('shop-items-container').classList.add('hidden');
+            document.getElementById('shop-loading').classList.remove('hidden');
+            document.getElementById('shop-status-message').innerText = "";
+
+            // Таймер на 6 секунд
+            setTimeout(async function() {
+                // Списуємо гроші
+                currentGlobalMoney -= selectedPrice;
+                
+                // Оновлюємо інтерфейс і базу даних
+                document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+                document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+                updateStatusText();
+
+                await mySupabase
+                    .from('user_money')
+                    .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+
+                // Переходимо до екрану вибору доставки
+                document.getElementById('shop-loading').classList.add('hidden');
+                document.getElementById('shop-delivery').classList.remove('hidden');
+                document.getElementById('delivery-item-name').innerText = selectedProduct;
+            }, 6000);
+        }
+
+        // ПІДТВЕРДЖЕННЯ ДОСТАВКИ (ФІНАЛЬНИЙ ТРОЛІНГ)
+        function confirmDelivery() {
+            const method = document.getElementById('delivery-method').value;
+            const dest = document.getElementById('delivery-destination').value;
+
+            document.getElementById('shop-delivery').classList.add('hidden');
+            
+            document.getElementById('shop-status-message').innerHTML = `
+                <span style="color: #4edf7a;">✔ Успішно списано ${selectedPrice.toFixed(2)} $!</span><br><br>
+                Ваше замовлення [<b>${selectedProduct}</b>] прийнято!<br>
+                Спосіб видачі: <b>${method}</b><br>
+                Пункт призначення: <b>${dest}</b><br><br>
+                <span style="color: #ff4d4d; font-size: 1.2rem;">⚠ Помилка логістики: Всі бобри-кур'єри зараз зайняті поїданням дерев. Ваша доставка затримується приблизно на 50 років! 🦫🪵</span>
+            `;
+        }
+
+        // Картка 10 секунд
         function startLoading() {
             document.getElementById('buy-btn').classList.add('hidden');
             document.getElementById('loading-section').classList.remove('hidden');
