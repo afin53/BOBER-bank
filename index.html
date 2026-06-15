@@ -17,6 +17,7 @@
             justify-content: center;
             min-height: 100vh;
             transition: background 0.5s ease;
+            overflow-x: hidden; /* Щоб анімація не робила смуг прокрутки */
         }
 
         body.logged-in {
@@ -31,6 +32,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             position: relative;
             transition: background 0.5s ease;
+            z-index: 10;
         }
 
         header.logged-in-header {
@@ -48,6 +50,8 @@
             width: 350px;
             text-align: center;
             margin: 20px 0;
+            position: relative;
+            z-index: 5;
         }
 
         .hidden { display: none !important; }
@@ -75,17 +79,47 @@
             margin-top: 10px;
         }
         button:hover { background-color: #e08b14; }
+        button:disabled { background-color: #555 !important; color: #aaa; cursor: not-allowed; }
 
         .switch-link { margin-top: 15px; font-size: 0.9rem; color: #ff9f1c; cursor: pointer; text-decoration: underline; }
         
-        /* Стилі для карток товарів у магазині */
+        /* === СТИЛІ МАГАЗИНУ ТА АНІМАЦІЯ ПОДСТРИБУВАННЯ === */
+        
+        /* Основний контейнер товарів, який буде "качати" */
+        #shop-items-container {
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Клас, який вмикає анімацію (додається через JS) */
+        .bass-mode {
+            animation: bass-bounce 0.35s infinite alternate ease-in-out; /* Ритм під бас */
+        }
+
+        /* Сама анімація стискання/розширення */
+        @keyframes bass-bounce {
+            0% {
+                transform: scale(1.0); /* Нормальний розмір */
+            }
+            100% {
+                transform: scale(0.96); /* Трошки стискається під бас */
+            }
+        }
+
         .shop-item {
             background-color: #4d3120;
             border: 2px solid #ff9f1c;
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 20px;
+            transition: transform 0.1s;
         }
+        
+        /* Щоб самі картки теж трохи реагували при наведенні */
+        .shop-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 159, 28, 0.3);
+        }
+
         .shop-item img {
             width: 100%;
             max-height: 150px;
@@ -102,7 +136,7 @@
         .loader { border: 6px solid #3f3f50; border-top: 6px solid #ff9f1c; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        #status-message, #shop-status-message { font-weight: bold; font-size: 1.1rem; color: #ff4d4d; margin-top: 15px; }
+        #status-message, #shop-status-message { font-weight: bold; font-size: 1.1rem; color: #ff4d4d; margin-top: 15px; z-index: 10; position: relative; }
         .bomzh-text { font-weight: bold; font-style: italic; margin-top: 10px; }
 
         .menu-btn {
@@ -141,6 +175,8 @@
 </head>
 <body>
 
+    <audio id="bg-music" src="music.mp4" loop></audio>
+
     <header id="main-header">
         <div id="menu-trigger" class="menu-btn hidden" onclick="toggleSidebar(true)">☰</div>
         <h1 id="header-title">🦫 BOBER-BANK</h1>
@@ -148,7 +184,7 @@
 
     <div id="sidebar" class="sidebar">
         <div class="close-sidebar-btn" onclick="toggleSidebar(false)">✖</div>
-        <h3>Меню Бобра</h3>
+        <h3>Menu Бобра</h3>
         <ul>
             <li onclick="showSection('balance-sec')">💰 Баланс</li>
             <li onclick="showSection('card-sec')">💳 Замовити картку</li>
@@ -212,21 +248,21 @@
                 <img src="sarai.png" alt="Сарай">
                 <h3>Елітний Сарай</h3>
                 <p class="price-tag">10.00 $</p>
-                <button onclick="buyProduct('Елітний Сарай', 10.00)">Купити Сарай</button>
+                <button id="btn-sarai" onclick="buyProduct('Елітний Сарай', 10.00, 'btn-sarai')">Купити Сарай</button>
             </div>
 
             <div class="shop-item">
                 <img src="kvart.png" alt="Квартира">
                 <h3>Люкс Квартира</h3>
                 <p class="price-tag">50.00 $</p>
-                <button onclick="buyProduct('Люкс Квартира', 50.00)">Купити Квартиру</button>
+                <button id="btn-kvart" onclick="buyProduct('Люкс Квартира', 50.00, 'btn-kvart')">Купити Квартиру</button>
             </div>
 
             <div class="shop-item">
                 <img src="bobr.png" alt="Квас">
                 <h3>Бобровий Квас (0.5л)</h3>
                 <p class="price-tag">8.00 $</p>
-                <button onclick="buyProduct('Бобровий Квас', 8.00)">Купити Квас</button>
+                <button id="btn-bobr" onclick="buyProduct('Бобровий Квас', 8.00, 'btn-bobr')">Купити Квас</button>
             </div>
         </div>
 
@@ -268,6 +304,13 @@
         let currentGlobalMoney = 0.0;
         let selectedProduct = "";
         let selectedPrice = 0;
+        let currentBtnId = "";
+        let purchasedItems = [];
+
+        function playMusic() {
+            const music = document.getElementById('bg-music');
+            music.play().catch(err => console.log("Чекаємо кліку для запуску музики"));
+        }
 
         function toggleForms(target) {
             if (target === 'login') {
@@ -287,14 +330,31 @@
         function showSection(sectionId) {
             const sections = document.querySelectorAll('.bank-section');
             sections.forEach(sec => sec.classList.add('hidden'));
-            document.getElementById(sectionId).classList.remove('hidden');
             
-            // Скидаємо стан магазину при поверненні на вкладку
+            const targetSection = document.getElementById(sectionId);
+            targetSection.classList.remove('hidden');
+            
+            const shopContainer = document.getElementById('shop-items-container');
+
             if(sectionId === 'shop-sec') {
-                document.getElementById('shop-items-container').classList.remove('hidden');
+                // ВМИКАЄМО БАС-РЕЖИМ (додаємо клас анімації)
+                shopContainer.classList.add('bass-mode');
+                
+                shopContainer.classList.remove('hidden');
                 document.getElementById('shop-loading').classList.add('hidden');
                 document.getElementById('shop-delivery').classList.add('hidden');
                 document.getElementById('shop-status-message').innerText = "";
+                
+                purchasedItems.forEach(id => {
+                    const btn = document.getElementById(id);
+                    if(btn) {
+                        btn.innerText = "У доставці...";
+                        btn.disabled = true;
+                    }
+                });
+            } else {
+                // ВИМИКАЄМО БАС-РЕЖИМ, якщо вийшли з магазину
+                shopContainer.classList.remove('bass-mode');
             }
             
             toggleSidebar(false);
@@ -317,6 +377,7 @@
         }
 
         async function registerUser() {
+            playMusic();
             const loginInput = document.getElementById('reg-login').value.trim();
             const passInput = document.getElementById('reg-password').value.trim();
 
@@ -344,6 +405,7 @@
         }
 
         async function loginUser() {
+            playMusic();
             const loginIn = document.getElementById('login-username').value.trim();
             const passIn = document.getElementById('login-password').value.trim();
 
@@ -418,8 +480,7 @@
                 .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
         }
 
-        // КУПІВЛЯ В МАГАЗИНІ
-        async function buyProduct(name, price) {
+        async function buyProduct(name, price, btnId) {
             if (currentGlobalMoney < price) {
                 document.getElementById('shop-status-message').innerText = "У вас недостатньо бобро-баксів! Ідіть працювати на лісоповал. 🔨";
                 return;
@@ -427,18 +488,19 @@
 
             selectedProduct = name;
             selectedPrice = price;
+            currentBtnId = btnId;
 
-            // Ховаємо вітрину, вмикаємо завантаження
-            document.getElementById('shop-items-container').classList.add('hidden');
+            const shopContainer = document.getElementById('shop-items-container');
+            // Тимчасово вимикаємо бас при покупці, щоб не заважав оформленню
+            shopContainer.classList.remove('bass-mode');
+            shopContainer.classList.add('hidden');
+            
             document.getElementById('shop-loading').classList.remove('hidden');
             document.getElementById('shop-status-message').innerText = "";
 
-            // Таймер на 6 секунд
             setTimeout(async function() {
-                // Списуємо гроші
                 currentGlobalMoney -= selectedPrice;
                 
-                // Оновлюємо інтерфейс і базу даних
                 document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
                 document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
                 updateStatusText();
@@ -447,20 +509,19 @@
                     .from('user_money')
                     .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
 
-                // Переходимо до екрану вибору доставки
                 document.getElementById('shop-loading').classList.add('hidden');
                 document.getElementById('shop-delivery').classList.remove('hidden');
                 document.getElementById('delivery-item-name').innerText = selectedProduct;
             }, 6000);
         }
 
-        // ПІДТВЕРДЖЕННЯ ДОСТАВКИ (ФІНАЛЬНИЙ ТРОЛІНГ)
         function confirmDelivery() {
             const method = document.getElementById('delivery-method').value;
             const dest = document.getElementById('delivery-destination').value;
 
             document.getElementById('shop-delivery').classList.add('hidden');
-            
+            purchasedItems.push(currentBtnId);
+
             document.getElementById('shop-status-message').innerHTML = `
                 <span style="color: #4edf7a;">✔ Успішно списано ${selectedPrice.toFixed(2)} $!</span><br><br>
                 Ваше замовлення [<b>${selectedProduct}</b>] прийнято!<br>
@@ -470,7 +531,6 @@
             `;
         }
 
-        // Картка 10 секунд
         function startLoading() {
             document.getElementById('buy-btn').classList.add('hidden');
             document.getElementById('loading-section').classList.remove('hidden');
