@@ -6,7 +6,6 @@
     <title>BOBER-BANK — Офіційний сайт</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Базові стилі (Тема входу/реєстрації) */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #1e1e24;
@@ -20,9 +19,8 @@
             transition: background 0.5s ease;
         }
 
-        /* Нова тема після входу */
         body.logged-in {
-            background-color: #3d2314; /* Боброва коричнева тема */
+            background-color: #3d2314;
         }
 
         header {
@@ -36,7 +34,7 @@
         }
 
         header.logged-in-header {
-            background-color: #8e5a36; /* Колір шапки після входу */
+            background-color: #8e5a36;
         }
 
         header h1 { margin: 0; color: #1e1e24; font-size: 2.5rem; }
@@ -50,7 +48,6 @@
             width: 350px;
             text-align: center;
             margin: 20px 0;
-            transition: 0.3s;
         }
 
         .hidden { display: none !important; }
@@ -81,15 +78,14 @@
 
         .switch-link { margin-top: 15px; font-size: 0.9rem; color: #ff9f1c; cursor: pointer; text-decoration: underline; }
         .bank-image { width: 100%; max-width: 250px; border-radius: 8px; margin-bottom: 15px; border: 3px solid #ff9f1c; cursor: pointer; transition: transform 0.1s; }
-        .bank-image:active { transform: scale(0.95); } /* Анімація кліку */
+        .bank-image:active { transform: scale(0.95); }
 
         .loader { border: 6px solid #3f3f50; border-top: 6px solid #ff9f1c; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         #status-message { font-weight: bold; font-size: 1.1rem; color: #ff4d4d; margin-top: 15px; }
-        .bomzh-text { color: #ff4d4d; font-weight: bold; font-style: italic; margin-top: 10px; }
+        .bomzh-text { font-weight: bold; font-style: italic; margin-top: 10px; }
 
-        /* СТИЛІ ДЛЯ ВИДВИЖНОГО МЕНЮ */
         .menu-btn {
             position: absolute;
             left: 20px;
@@ -157,7 +153,6 @@
         <div class="switch-link" onclick="toggleForms('register')">Назад до реєстрації</div>
     </div>
 
-
     <div id="balance-sec" class="container hidden bank-section">
         <h2>Твій особистий баланс</h2>
         <h1 style="color: #4edf7a; font-size: 3rem; margin: 10px 0;"><span id="user-money-display">0.00</span> $</h1>
@@ -212,16 +207,28 @@
         }
 
         function showSection(sectionId) {
-            // Ховаємо всі секції кабінету
             const sections = document.querySelectorAll('.bank-section');
             sections.forEach(sec => sec.classList.add('hidden'));
-            
-            // Показуємо потрібну
             document.getElementById(sectionId).classList.remove('hidden');
             toggleSidebar(false);
         }
 
-        // РЕЄСТРАЦІЯ
+        function updateStatusText() {
+            const bomzhTextElement = document.querySelector('.bomzh-text');
+            if (!bomzhTextElement) return;
+            
+            if (currentGlobalMoney < 5.0) {
+                bomzhTextElement.innerText = "ех у тебе немає ні бакса який ж ти бомж";
+                bomzhTextElement.style.color = "#ff4d4d";
+            } else if (currentGlobalMoney >= 5.0 && currentGlobalMoney < 50.0) {
+                bomzhTextElement.innerText = "Ого, та ти вже солідний бобер! 🪵";
+                bomzhTextElement.style.color = "#ff9f1c";
+            } else {
+                bomzhTextElement.innerText = "Офіційно: ти Бобровий Магнат! 👑";
+                bomzhTextElement.style.color = "#4edf7a";
+            }
+        }
+
         async function registerUser() {
             const loginInput = document.getElementById('reg-login').value.trim();
             const passInput = document.getElementById('reg-password').value.trim();
@@ -232,7 +239,6 @@
             }
 
             try {
-                // Запис логіну
                 const { error: regError } = await mySupabase
                     .from('passcodes')
                     .insert([{ login: loginInput, password: passInput }]);
@@ -242,9 +248,7 @@
                     return;
                 }
 
-                // Створюємо нульовий баланс в новій таблиці user_money
                 await mySupabase.from('user_money').insert([{ login: loginInput, money: 0 }]);
-
                 alert("Реєстрація успішна! Тепер увійдіть.");
                 toggleForms('login');
             } catch (err) {
@@ -252,7 +256,6 @@
             }
         }
 
-        // ВХІД
         async function loginUser() {
             const loginIn = document.getElementById('login-username').value.trim();
             const passIn = document.getElementById('login-password').value.trim();
@@ -278,18 +281,12 @@
                     alert("Вхід успішний!");
                     currentGlobalUser = loginIn;
 
-                    // Зміна теми та шапки тексту
                     document.body.classList.add('logged-in');
                     document.getElementById('main-header').classList.add('logged-in-header');
                     document.getElementById('header-title').innerText = "🦫 ЛОГІВО ПРЕЗЕДЕНТА БОБРІВ";
-
-                    // Показуємо тригер меню
                     document.getElementById('menu-trigger').classList.remove('hidden');
 
-                    // Завантажуємо гроші користувача
                     await fetchUserMoney();
-
-                    // Ховаємо форму входу, відкриваємо першу секцію (Баланс)
                     document.getElementById('login-box').classList.add('hidden');
                     showSection('balance-sec');
                 } else {
@@ -300,77 +297,35 @@
             }
         }
 
-        // Отримання грошей з бази даних + динамічний статус бомжа
         async function fetchUserMoney() {
-            const { data, error } = await mySupabase
-                .from('user_money')
-                .select('money')
-                .eq('login', currentGlobalUser);
+            try {
+                const { data, error } = await mySupabase
+                    .from('user_money')
+                    .select('money')
+                    .eq('login', currentGlobalUser);
 
-            if (data && data.length > 0) {
-                currentGlobalMoney = parseFloat(data[0].money);
-            } else {
-                await mySupabase.from('user_money').insert([{ login: currentGlobalUser, money: 0 }]);
-                currentGlobalMoney = 0.0;
-            }
+                if (data && data.length > 0) {
+                    currentGlobalMoney = parseFloat(data[0].money);
+                } else {
+                    await mySupabase.from('user_money').insert([{ login: currentGlobalUser, money: 0 }]);
+                    currentGlobalMoney = 0.0;
+                }
 
-            // Оновлюємо цифри на екранах
-            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
-            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
-
-            // ВИПРАВЛЕННЯ: Динамічний статус залежно від багатства
-            const bomzhTextElement = document.querySelector('.bomzh-text');
-            if (currentGlobalMoney < 5.0) {
-                bomzhTextElement.innerText = "ех у тебе немає ні бакса який ж ти бомж";
-                bomzhTextElement.style.color = "#ff4d4d"; // Червоний
-            } else if (currentGlobalMoney >= 5.0 && currentGlobalMoney < 50.0) {
-                bomzhTextElement.innerText = "Ого, та ти вже солідний бобер! 🪵";
-                bomzhTextElement.style.color = "#ff9f1c"; // Помаранчевий
-            } else {
-                bomzhTextElement.innerText = "Офіційно: ти Бобровий Магнат! 👑";
-                bomzhTextElement.style.color = "#4edf7a"; // Зелений
+                document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+                document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+                updateStatusText();
+            } catch (e) {
+                console.error(e);
             }
         }
 
-            // Оновлюємо цифри на екранах
-            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
-            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
-        }
-
-        // КЛІКЕР (Робота)
         async function clickBeaver() {
             currentGlobalMoney += 0.10;
             
-            // Оновлюємо інтерфейс миттєво
             document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
             document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+            updateStatusText();
 
-            // Оновлюємо статус тексту бомжа прямо під час кліків!
-            const bomzhTextElement = document.querySelector('.bomzh-text');
-            if (currentGlobalMoney < 5.0) {
-                bomzhTextElement.innerText = "ех у тебе немає ні бакса який ж ти бомж";
-                bomzhTextElement.style.color = "#ff4d4d";
-            } else if (currentGlobalMoney >= 5.0 && currentGlobalMoney < 50.0) {
-                bomzhTextElement.innerText = "Ого, та ти вже солідний бобер! 🪵";
-                bomzhTextElement.style.color = "#ff9f1c";
-            } else {
-                bomzhTextElement.innerText = "Офіційно: ти Бобровий Магнат! 👑";
-                bomzhTextElement.style.color = "#4edf7a";
-            }
-
-            // Зберігаємо в Supabase
-            const { error } = await mySupabase
-                .from('user_money')
-                .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
-                
-            if(error) console.error("Помилка збереження грошей: ", error.message);
-        }
-            
-            // Оновлюємо інтерфейс миттєво, щоб не висло
-            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
-            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
-
-            // Зберігаємо в Supabase (оновлюємо рядок через upsert)
             const { error } = await mySupabase
                 .from('user_money')
                 .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
@@ -378,7 +333,6 @@
             if(error) console.error("Помилка збереження грошей: ", error.message);
         }
 
-        // 10-секундний таймер на картку
         function startLoading() {
             document.getElementById('buy-btn').classList.add('hidden');
             document.getElementById('loading-section').classList.remove('hidden');
