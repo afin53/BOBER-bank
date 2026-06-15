@@ -17,7 +17,7 @@
             justify-content: center;
             min-height: 100vh;
             transition: background 0.5s ease;
-            overflow-x: hidden; /* Щоб анімація не робила смуг прокрутки */
+            overflow-x: hidden;
         }
 
         body.logged-in {
@@ -83,26 +83,18 @@
 
         .switch-link { margin-top: 15px; font-size: 0.9rem; color: #ff9f1c; cursor: pointer; text-decoration: underline; }
         
-        /* === СТИЛІ МАГАЗИНУ ТА АНІМАЦІЯ ПОДСТРИБУВАННЯ === */
-        
-        /* Основний контейнер товарів, який буде "качати" */
+        /* МАГАЗИН ТА БАС-АНІМАЦІЯ */
         #shop-items-container {
             transition: transform 0.1s ease-out;
         }
 
-        /* Клас, який вмикає анімацію (додається через JS) */
         .bass-mode {
-            animation: bass-bounce 0.35s infinite alternate ease-in-out; /* Ритм під бас */
+            animation: bass-bounce 0.35s infinite alternate ease-in-out;
         }
 
-        /* Сама анімація стискання/розширення */
         @keyframes bass-bounce {
-            0% {
-                transform: scale(1.0); /* Нормальний розмір */
-            }
-            100% {
-                transform: scale(0.96); /* Трошки стискається під бас */
-            }
+            0% { transform: scale(1.0); }
+            100% { transform: scale(0.96); }
         }
 
         .shop-item {
@@ -114,7 +106,6 @@
             transition: transform 0.1s;
         }
         
-        /* Щоб самі картки теж трохи реагували при наведенні */
         .shop-item:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(255, 159, 28, 0.3);
@@ -307,9 +298,14 @@
         let currentBtnId = "";
         let purchasedItems = [];
 
-        function playMusic() {
+        // Контроль музики: грає ТІЛЬКИ в магазині
+        function setMusicState(shouldPlay) {
             const music = document.getElementById('bg-music');
-            music.play().catch(err => console.log("Чекаємо кліку для запуску музики"));
+            if (shouldPlay) {
+                music.play().catch(err => console.log("Браузер заблокував автоплей до першого кліку"));
+            } else {
+                music.pause();
+            }
         }
 
         function toggleForms(target) {
@@ -337,7 +333,8 @@
             const shopContainer = document.getElementById('shop-items-container');
 
             if(sectionId === 'shop-sec') {
-                // ВМИКАЄМО БАС-РЕЖИМ (додаємо клас анімації)
+                // ВМИКАЄМО МУЗИКУ ТА БАСИ
+                setMusicState(true);
                 shopContainer.classList.add('bass-mode');
                 
                 shopContainer.classList.remove('hidden');
@@ -353,7 +350,8 @@
                     }
                 });
             } else {
-                // ВИМИКАЄМО БАС-РЕЖИМ, якщо вийшли з магазину
+                // ВИМИКАЄМО МУЗИКУ ТА БАСИ при виході з магазину
+                setMusicState(false);
                 shopContainer.classList.remove('bass-mode');
             }
             
@@ -377,7 +375,6 @@
         }
 
         async function registerUser() {
-            playMusic();
             const loginInput = document.getElementById('reg-login').value.trim();
             const passInput = document.getElementById('reg-password').value.trim();
 
@@ -400,12 +397,11 @@
                 alert("Реєстрація успішна! Тепер увійдіть.");
                 toggleForms('login');
             } catch (err) {
-                alert("Критична помилка: " + err.message);
+                alert("Критична повилка: " + err.message);
             }
         }
 
         async function loginUser() {
-            playMusic();
             const loginIn = document.getElementById('login-username').value.trim();
             const passIn = document.getElementById('login-password').value.trim();
 
@@ -491,10 +487,12 @@
             currentBtnId = btnId;
 
             const shopContainer = document.getElementById('shop-items-container');
-            // Тимчасово вимикаємо бас при покупці, щоб не заважав оформленню
             shopContainer.classList.remove('bass-mode');
             shopContainer.classList.add('hidden');
             
+            // Ставимо музику на паузу, поки йде серйозне оформлення
+            setMusicState(false);
+
             document.getElementById('shop-loading').classList.remove('hidden');
             document.getElementById('shop-status-message').innerText = "";
 
