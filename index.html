@@ -300,7 +300,7 @@
             }
         }
 
-        // Отримання грошей з бази даних
+        // Отримання грошей з бази даних + динамічний статус бомжа
         async function fetchUserMoney() {
             const { data, error } = await mySupabase
                 .from('user_money')
@@ -310,10 +310,27 @@
             if (data && data.length > 0) {
                 currentGlobalMoney = parseFloat(data[0].money);
             } else {
-                // Якщо раптом рядка немає, створюємо його
                 await mySupabase.from('user_money').insert([{ login: currentGlobalUser, money: 0 }]);
                 currentGlobalMoney = 0.0;
             }
+
+            // Оновлюємо цифри на екранах
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+
+            // ВИПРАВЛЕННЯ: Динамічний статус залежно від багатства
+            const bomzhTextElement = document.querySelector('.bomzh-text');
+            if (currentGlobalMoney < 5.0) {
+                bomzhTextElement.innerText = "ех у тебе немає ні бакса який ж ти бомж";
+                bomzhTextElement.style.color = "#ff4d4d"; // Червоний
+            } else if (currentGlobalMoney >= 5.0 && currentGlobalMoney < 50.0) {
+                bomzhTextElement.innerText = "Ого, та ти вже солідний бобер! 🪵";
+                bomzhTextElement.style.color = "#ff9f1c"; // Помаранчевий
+            } else {
+                bomzhTextElement.innerText = "Офіційно: ти Бобровий Магнат! 👑";
+                bomzhTextElement.style.color = "#4edf7a"; // Зелений
+            }
+        }
 
             // Оновлюємо цифри на екранах
             document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
@@ -323,6 +340,31 @@
         // КЛІКЕР (Робота)
         async function clickBeaver() {
             currentGlobalMoney += 0.10;
+            
+            // Оновлюємо інтерфейс миттєво
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+
+            // Оновлюємо статус тексту бомжа прямо під час кліків!
+            const bomzhTextElement = document.querySelector('.bomzh-text');
+            if (currentGlobalMoney < 5.0) {
+                bomzhTextElement.innerText = "ех у тебе немає ні бакса який ж ти бомж";
+                bomzhTextElement.style.color = "#ff4d4d";
+            } else if (currentGlobalMoney >= 5.0 && currentGlobalMoney < 50.0) {
+                bomzhTextElement.innerText = "Ого, та ти вже солідний бобер! 🪵";
+                bomzhTextElement.style.color = "#ff9f1c";
+            } else {
+                bomzhTextElement.innerText = "Офіційно: ти Бобровий Магнат! 👑";
+                bomzhTextElement.style.color = "#4edf7a";
+            }
+
+            // Зберігаємо в Supabase
+            const { error } = await mySupabase
+                .from('user_money')
+                .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+                
+            if(error) console.error("Помилка збереження грошей: ", error.message);
+        }
             
             // Оновлюємо інтерфейс миттєво, щоб не висло
             document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
