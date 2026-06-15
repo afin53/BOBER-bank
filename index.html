@@ -32,7 +32,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             position: relative;
             transition: background 0.5s ease;
-            z-index: 10;
+            z-index: 20;
         }
 
         header.logged-in-header {
@@ -51,7 +51,7 @@
             text-align: center;
             margin: 20px 0;
             position: relative;
-            z-index: 5;
+            z-index: 10;
         }
 
         .hidden { display: none !important; }
@@ -121,14 +121,47 @@
         .shop-item h3 { margin: 5px 0; }
         .price-tag { color: #4edf7a; font-weight: bold; font-size: 1.2rem; }
 
+        /* ЛІТАЮЧІ СЛОВА */
+        .flying-word {
+            position: fixed;
+            color: rgba(255, 255, 255, 0.12);
+            font-weight: bold;
+            font-size: 1.8rem;
+            white-space: nowrap;
+            user-select: none;
+            pointer-events: none;
+            z-index: 1;
+            animation: fly-around 12s infinite linear;
+        }
+
+        @keyframes fly-around {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(120vw, 30vh) rotate(90deg); }
+            50% { transform: translate(50vw, 90vh) rotate(180deg); }
+            75% { transform: translate(-20vw, 60vh) rotate(270deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+
         .bank-image { width: 100%; max-width: 250px; border-radius: 8px; margin-bottom: 15px; border: 3px solid #ff9f1c; cursor: pointer; transition: transform 0.1s; }
         .bank-image:active { transform: scale(0.95); }
 
         .loader { border: 6px solid #3f3f50; border-top: 6px solid #ff9f1c; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        #status-message, #shop-status-message { font-weight: bold; font-size: 1.1rem; color: #ff4d4d; margin-top: 15px; z-index: 10; position: relative; }
+        #status-message, #shop-status-message, #transfer-status-message { font-weight: bold; font-size: 1.1rem; color: #ff4d4d; margin-top: 15px; z-index: 10; position: relative; }
         .bomzh-text { font-weight: bold; font-style: italic; margin-top: 10px; }
+        
+        /* БОБРО-ПОРАДИ */
+        .tip-box {
+            background-color: #343444;
+            border-left: 5px solid #ff9f1c;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-style: italic;
+            color: #ffbf69;
+        }
 
         .menu-btn {
             position: absolute;
@@ -168,6 +201,8 @@
 
     <audio id="bg-music" src="music.mp4" loop></audio>
 
+    <div id="shop-background-words"></div>
+
     <header id="main-header">
         <div id="menu-trigger" class="menu-btn hidden" onclick="toggleSidebar(true)">☰</div>
         <h1 id="header-title">🦫 BOBER-BANK</h1>
@@ -181,6 +216,7 @@
             <li onclick="showSection('card-sec')">💳 Замовити картку</li>
             <li onclick="showSection('job-sec')">🔨 Робота (Клікер)</li>
             <li onclick="showSection('shop-sec')">🛒 Магазин Бобра</li>
+            <li onclick="showSection('transfer-sec')">💸 Переказ Бобро-Баксів</li>
         </ul>
     </div>
 
@@ -286,6 +322,27 @@
         <div id="shop-status-message"></div>
     </div>
 
+    <div id="transfer-sec" class="container hidden bank-section">
+        <h2>💸 Швидкий Бобро-Переказ</h2>
+        <p>Перекинь бакси іншому учаснику банку за логіном!</p>
+        
+        <div id="transfer-form">
+            <input type="text" id="transfer-target" placeholder="Логін отримувача (друга)">
+            <input type="number" id="transfer-amount" step="0.01" min="0.1" placeholder="Сума в баксах ($)">
+            <button onclick="sendMoneyTransaction()">Надіслати гроші</button>
+        </div>
+
+        <div id="transfer-loading" class="hidden">
+            <div class="loader"></div>
+            <p style="color:#ff9f1c; font-weight:bold;">Бобри перераховують купюри... ⏳</p>
+            <div class="tip-box">
+                <b>Порада:</b> <span id="transfer-tip-text">завантаження...</span>
+            </div>
+        </div>
+
+        <div id="transfer-status-message"></div>
+    </div>
+
     <script>
         const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
         const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
@@ -298,14 +355,44 @@
         let currentBtnId = "";
         let purchasedItems = [];
 
-        // Контроль музики: грає ТІЛЬКИ в магазині
+        const bobrPhrases = ["боброво!", "дешево!", "БОБРА!", "Купляй не пошкодиеш", "ОФІЦІЙНО", "500_строчок_кода"];
+        
+        // Список унікальних бобро-порад під час переказу
+        const bobrTips = [
+            "Не довіряйте свій пароль бобрам з сусіднього лісу!",
+            "Якщо клікати швидше, то солідним бобром можна стати за 5 хвилин.",
+            "Бобровий Квас підвищує продуктивність праці на лісоповалі на 300%.",
+            "Куплений сарай автоматично захищає ваші бобро-бакси від податків.",
+            "Найкращий спосіб вийти зі статусу бомжа — люто затиснути ліву кнопку миші.",
+            "Офіційно: Бобер-Банк не бере комісію за перекази, тільки бере колодами!"
+        ];
+
         function setMusicState(shouldPlay) {
             const music = document.getElementById('bg-music');
             if (shouldPlay) {
-                music.play().catch(err => console.log("Браузер заблокував автоплей до першого кліку"));
+                music.play().catch(err => console.log("Чекаємо взаємодії"));
             } else {
                 music.pause();
             }
+        }
+
+        function startFlyingWords() {
+            const container = document.getElementById('shop-background-words');
+            container.innerHTML = "";
+            bobrPhrases.forEach((phrase, index) => {
+                const wordEl = document.createElement('div');
+                wordEl.classList.add('flying-word');
+                wordEl.innerText = phrase;
+                wordEl.style.top = Math.random() * 80 + "vh";
+                wordEl.style.left = Math.random() * 30 + "vw";
+                wordEl.style.animationDelay = (index * 1.8) + "s";
+                wordEl.style.animationDuration = (10 + Math.random() * 6) + "s";
+                container.appendChild(wordEl);
+            });
+        }
+
+        function stopFlyingWords() {
+            document.getElementById('shop-background-words').innerHTML = "";
         }
 
         function toggleForms(target) {
@@ -332,11 +419,13 @@
             
             const shopContainer = document.getElementById('shop-items-container');
 
+            // Скидаємо статуси переказів при переході
+            document.getElementById('transfer-status-message').innerText = "";
+
             if(sectionId === 'shop-sec') {
-                // ВМИКАЄМО МУЗИКУ ТА БАСИ
                 setMusicState(true);
                 shopContainer.classList.add('bass-mode');
-                
+                startFlyingWords();
                 shopContainer.classList.remove('hidden');
                 document.getElementById('shop-loading').classList.add('hidden');
                 document.getElementById('shop-delivery').classList.add('hidden');
@@ -350,9 +439,9 @@
                     }
                 });
             } else {
-                // ВИМИКАЄМО МУЗИКУ ТА БАСИ при виході з магазину
                 setMusicState(false);
                 shopContainer.classList.remove('bass-mode');
+                stopFlyingWords();
             }
             
             toggleSidebar(false);
@@ -372,6 +461,97 @@
                 bomzhTextElement.innerText = "Офіційно: ти Бобровий Магнат! 👑";
                 bomzhTextElement.style.color = "#4edf7a";
             }
+        }
+
+        // ЛОГІКА ПЕРЕКАЗУ МІЖ ЮЗЕРАМИ
+        async function sendMoneyTransaction() {
+            const targetUser = document.getElementById('transfer-target').value.trim();
+            const amountStr = document.getElementById('transfer-amount').value.trim();
+            const statusMsg = document.getElementById('transfer-status-message');
+
+            statusMsg.innerText = "";
+            statusMsg.style.color = "#ff4d4d";
+
+            if (!targetUser || !amountStr) {
+                statusMsg.innerText = "Помилка: Заповни логін отримувача та суму!";
+                return;
+            }
+
+            const amount = parseFloat(amountStr);
+            if (isNaN(amount) || amount <= 0) {
+                statusMsg.innerText = "Помилка: Сума має бути більшою за нуль!";
+                return;
+            }
+
+            if (targetUser === currentGlobalUser) {
+                statusMsg.innerText = "Помилка: Не можна переказувати гроші самому собі! Це боброва махінація.";
+                return;
+            }
+
+            if (currentGlobalMoney < amount) {
+                statusMsg.innerText = "Помилка: У вас недостатньо бобро-баксів для переказу!";
+                return;
+            }
+
+            // Вмикаємо екран завантаження на 4 секунди
+            document.getElementById('transfer-form').classList.add('hidden');
+            document.getElementById('transfer-loading').classList.remove('hidden');
+            
+            // Вибираємо випадкову пораду зі списку
+            const randomTip = bobrTips[Math.floor(Math.random() * bobrTips.length)];
+            document.getElementById('transfer-tip-text').innerText = randomTip;
+
+            setTimeout(async function() {
+                try {
+                    // 1. Перевіряємо через Супабейс, чи існує такий отримувач взагалі
+                    const { data: targetData, error: targetError } = await mySupabase
+                        .from('user_money')
+                        .select('*')
+                        .eq('login', targetUser);
+
+                    if (targetError || !targetData || targetData.length === 0) {
+                        document.getElementById('transfer-form').classList.remove('hidden');
+                        document.getElementById('transfer-loading').classList.add('hidden');
+                        statusMsg.innerText = `Помилка: Користувача з логіном "${targetUser}" не існує в базі!`;
+                        return;
+                    }
+
+                    // Отримуємо поточний баланс отримувача
+                    let targetCurrentMoney = parseFloat(targetData[0].money);
+
+                    // 2. Списуємо гроші у відправника
+                    currentGlobalMoney -= amount;
+                    await mySupabase
+                        .from('user_money')
+                        .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+
+                    // 3. Додаємо гроші отримувачу
+                    targetCurrentMoney += amount;
+                    await mySupabase
+                        .from('user_money')
+                        .upsert({ login: targetUser, money: targetCurrentMoney });
+
+                    // Оновлюємо інтерфейс
+                    document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+                    document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+                    updateStatusText();
+
+                    // Повертаємо форму назад
+                    document.getElementById('transfer-form').classList.remove('hidden');
+                    document.getElementById('transfer-loading').classList.add('hidden');
+                    
+                    document.getElementById('transfer-target').value = "";
+                    document.getElementById('transfer-amount').value = "";
+
+                    statusMsg.style.color = "#4edf7a";
+                    statusMsg.innerText = `✔ Успішно переказано ${amount.toFixed(2)} $ для користувача ${targetUser}!`;
+
+                } catch (err) {
+                    document.getElementById('transfer-form').classList.remove('hidden');
+                    document.getElementById('transfer-loading').classList.add('hidden');
+                    statusMsg.innerText = "Критична помилка мережі: " + err.message;
+                }
+            }, 4000); // Рівно 4 секунди завантаження з порадами
         }
 
         async function registerUser() {
@@ -397,7 +577,7 @@
                 alert("Реєстрація успішна! Тепер увійдіть.");
                 toggleForms('login');
             } catch (err) {
-                alert("Критична повилка: " + err.message);
+                alert("Критична помилка: " + err.message);
             }
         }
 
@@ -490,8 +670,8 @@
             shopContainer.classList.remove('bass-mode');
             shopContainer.classList.add('hidden');
             
-            // Ставимо музику на паузу, поки йде серйозне оформлення
             setMusicState(false);
+            stopFlyingWords();
 
             document.getElementById('shop-loading').classList.remove('hidden');
             document.getElementById('shop-status-message').innerText = "";
