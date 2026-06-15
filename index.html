@@ -18,6 +18,7 @@
             min-height: 100vh;
             transition: background 0.5s ease;
             overflow-x: hidden;
+            position: relative;
         }
 
         body.logged-in {
@@ -413,6 +414,81 @@
             text-shadow: 0 0 12px #a855f7;
         }
 
+        /* 🦫 СТИЛІ ДЛЯ БОБРОВОГО ЧАТУ */
+        .chat-box {
+            display: flex;
+            flex-direction: column;
+            height: 400px;
+            background-color: #15151a;
+            border: 2px solid #ff9f1c;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: left;
+        }
+
+        .chat-msg-row {
+            background-color: #252530;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9f1c;
+            word-wrap: break-word;
+        }
+
+        .chat-msg-user {
+            font-weight: bold;
+            color: #ffbf69;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .chat-msg-text {
+            font-size: 1rem;
+            color: #fff;
+        }
+
+        .chat-msg-img {
+            max-width: 100%;
+            max-height: 180px;
+            border-radius: 6px;
+            margin-top: 8px;
+            border: 1px solid #ff9f1c;
+            display: block;
+        }
+
+        .chat-inputs {
+            display: flex;
+            flex-direction: column;
+            background-color: #1e1e24;
+            padding: 10px;
+            border-top: 1px solid #3f3f50;
+            gap: 5px;
+        }
+
+        .chat-row-fields {
+            display: flex;
+            gap: 5px;
+        }
+
+        .chat-file-btn {
+            background-color: #3f3f50;
+            color: white;
+            font-size: 0.8rem;
+            padding: 5px;
+            margin: 0;
+            width: auto;
+            flex-shrink: 0;
+        }
+
         /* ЛОАДЕРЫ */
         .loader {
             border: 6px solid #3f3f50;
@@ -500,6 +576,23 @@
             margin: 5px auto 15px auto;
             display: inline-block;
         }
+
+        /* 🥚 ПАСХАЛКА В ПРАВОМУ НИЖНЬОМУ КУТКУ */
+        .easter-egg-tag {
+            position: fixed;
+            right: 15px;
+            bottom: 15px;
+            font-size: 0.75rem;
+            color: rgba(255, 159, 28, 0.3);
+            cursor: pointer;
+            user-select: none;
+            z-index: 999;
+            transition: color 0.2s, text-shadow 0.2s;
+        }
+        .easter-egg-tag:hover {
+            color: #ff9f1c;
+            text-shadow: 0 0 8px #ff9f1c;
+        }
     </style>
 </head>
 <body>
@@ -517,6 +610,7 @@
         <h3>Головне Меню</h3>
         <ul>
             <li onclick="showSection('balance-sec')">💰 Мій Баланс</li>
+            <li onclick="showSection('chat-sec')">💬 Бобровий Чат</li>
             <li onclick="showSection('card-sec')">💳 Оформити картку</li>
             <li onclick="showSection('job-sec')">🔨 Бобровий Лісоповал</li>
             <li onclick="showSection('shop-sec')">🛒 Магазин Бобра</li>
@@ -562,6 +656,31 @@
             <b>📋 Твоє нерухоме майно:</b> <br>
             <span id="inv-items-list" style="color:#ffbf69; font-style:italic;">Нічого немає, ти голий як сокіл</span>
         </div>
+    </div>
+
+    <div id="chat-sec" class="container hidden bank-section" style="width: 400px;">
+        <h2>💬 Загальнолісовий Чат Бобрів</h2>
+        <p style="font-size:0.85rem; color:#aaa; margin-top:-10px;">Ділися схемами заробітку та фотографіями гребель!</p>
+        
+        <div class="chat-box">
+            <div id="chat-messages-container" class="chat-messages">
+                <p style="color:#aaa; text-align:center;">Завантаження секретних шифрів...</p>
+            </div>
+            <div class="chat-inputs">
+                <div class="chat-row-fields">
+                    <input type="text" id="chat-msg-input" placeholder="Напиши щось розумне...">
+                    <button onclick="sendChatMessage()" style="width: auto; margin: 0; padding: 10px 15px;">🚀</button>
+                </div>
+                <div class="chat-row-fields" style="align-items: center; justify-content: space-between;">
+                    <input type="text" id="chat-img-url" placeholder="Або встав URL картинки..." style="margin:0; font-size:0.85rem; padding:8px;">
+                    <span style="font-size: 0.8rem; color:#888; padding: 0 5px;">чи</span>
+                    <input type="file" id="chat-file-input" accept="image/*" class="hidden" onchange="handleFileAsBase64(this)">
+                    <button onclick="document.getElementById('chat-file-input').click()" class="chat-file-btn">📂 Файл</button>
+                </div>
+                <div id="file-status-label" style="font-size:0.75rem; color:#4edf7a; text-align:left; display:none;">Файл готовий до завантаження!</div>
+            </div>
+        </div>
+        <button onclick="loadChatMessages()" style="background-color: #3f3f50; color: #fff; padding: 8px;">🔄 Оновити стрічку</button>
     </div>
 
     <div id="card-sec" class="container hidden bank-section">
@@ -623,7 +742,7 @@
         <div id="shop-delivery" class="hidden">
             <h3>📦 Оформлення бобро-доставки</h3>
             <p>Куплений товар: <span id="delivery-item-name" style="color:#ff9f1c; font-weight:bold;"></span></p>
-            <label>Оберіть логістичну компанію:</label>
+            <label>Оберіть логістичную компанію:</label>
             <select id="delivery-method">
                 <option value="Нова Пошта Бобрів">Нова Пошта Бобрів</option>
                 <option value="Укр Ліс Пошта">Укр Ліс Пошта</option>
@@ -744,6 +863,8 @@
         <div id="collider-leaderboard" style="text-align:left; font-size:0.95rem; max-height:200px; overflow-y:auto;">Завантаження списку деміургів...</div>
     </div>
 
+    <div class="easter-egg-tag" onclick="triggerEasterEgg()">v2.0.1-BoberBuild</div>
+
     <script>
         // Ініціалізація клієнта Supabase з твоїми ключами
         const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
@@ -761,6 +882,9 @@
         let itemInDelivery = "";
         let ownedItemsList = "";
 
+        // Тимчасова змінна для Base64-картинки чату
+        let base64ImageString = "";
+
         // Допоміжні константи магазину
         let selectedProduct = "";
         let selectedPrice = 0;
@@ -769,6 +893,7 @@
         let isMusicPlaying = false; 
         let creditIntervalId = null;
         let syncIntervalId = null;
+        let chatIntervalId = null;
 
         // Параметри перукарні
         let requiredBarberClicks = 0;
@@ -779,7 +904,7 @@
         const bobrPhrases = [
             "глобально", "біржа_одна", "stuff_таблиця", "мільярдери", "антиматерія", 
             "бобер", "бакси", "казік", "лісоповал", "супабейс", "олігарх", "кредит", 
-            "паспорт", "коллайдер", "антиматерія", "дупло_люкс", "бобро-квас", "сарай"
+            "паспорт", "коллайдер", "чат_бобрів", "фото_греблі", "дупло_люкс", "бобро-квас"
         ];
 
         // Керування фоновою аудіодоріжкою
@@ -794,7 +919,7 @@
         }
         function toggleCasinoMusic() { setMusicState(!isMusicPlaying); }
 
-        // Функція для спавну літаючих слів (наша фірмова фіча)
+        // Функція для спавну літаючих слів
         function spawnFlyingWords() {
             const container = document.getElementById('shop-background-words');
             if (!container) return;
@@ -831,7 +956,7 @@
             else document.getElementById('sidebar').classList.remove('active');
         }
 
-        // Логіка перемикання розділів (із збереженням басового режиму магазину)
+        // Логіка перемикання розділів
         function showSection(sectionId) {
             document.querySelectorAll('.bank-section').forEach(sec => sec.classList.add('hidden'));
             document.getElementById(sectionId).classList.remove('hidden');
@@ -842,18 +967,28 @@
             document.getElementById('credit-status-message').innerText = "";
             document.getElementById('crypto-status-message').innerText = "";
 
+            // Зупиняємо чат-інтервал, якщо пішли з вкладки чату
+            if (chatIntervalId && sectionId !== 'chat-sec') {
+                clearInterval(chatIntervalId);
+                chatIntervalId = null;
+            }
+
             // Обробники специфічних секцій
             if (sectionId === 'barber-sec') generateNewBarberCustomer();
             if (sectionId === 'leaderboard-sec') loadLeaderboard();
             if (sectionId === 'passport-sec') updatePassportUI();
             if (sectionId === 'collider-sec') loadColliderLeaderboard();
+            if (sectionId === 'chat-sec') {
+                loadChatMessages();
+                // Ставимо автооновлення повідомлень раз на 4 секунди
+                chatIntervalId = setInterval(loadChatMessages, 4000);
+            }
 
             if (sectionId === 'shop-sec') {
                 setMusicState(true); 
                 document.getElementById('shop-items-container').classList.add('bass-mode');
                 document.getElementById('shop-loading').classList.add('hidden');
                 
-                // Перевірка чи не завис якийсь товар у доставці в базі даних
                 if (itemInDelivery) {
                     document.getElementById('shop-items-container').classList.add('hidden');
                     document.getElementById('shop-status-message').innerHTML = `📦 У тебе зараз їде товар: <b>${itemInDelivery}</b>!<br><span style="color:#ff4d4d; font-style:italic;">Бобри-кур'єри заблукали в хащах, доставка триватиме вічність. Нові замовлення заблоковані!</span>`;
@@ -867,10 +1002,9 @@
             toggleSidebar(false);
         }
 
-        // 📈 ГЛОБАЛЬНА СИНХРОНІЗОВАНА БІРЖА (Залежить виключно від поточного часу)
+        // 📈 ГЛОБАЛЬНА СИНХРОНІЗОВАНА БІРЖА
         function updateGlobalCryptoRate() {
-            const now = Math.floor(Date.now() / 5000); // Крок оновлення курсу — кожні 5 секунд
-            // Математична формула на основі синусів та косинусів часу дає ідентичний результат для всіх клієнтів світу
+            const now = Math.floor(Date.now() / 5000);
             let baseRate = 18 + Math.sin(now * 0.12) * 9 + Math.cos(now * 0.04) * 5;
             if (baseRate < 1) baseRate = 1.20;
             
@@ -887,7 +1021,7 @@
             }, 1000);
         }
 
-        // Торгівля криптовалютою на єдиній біржі
+        // Торгівля криптовалютою
         async function tradeCrypto(type) {
             const amountInput = document.getElementById('crypto-amount').value.trim();
             const statusMsg = document.getElementById('crypto-status-message');
@@ -906,18 +1040,18 @@
 
             if (type === 'buy') {
                 if (currentGlobalMoney < totalCost) { 
-                    statusMsg.style.color = "#ff4d4d"; statusMsg.innerText = "Недостатньо грошей на балансі для закупівлі!"; return; 
+                    statusMsg.style.color = "#ff4d4d"; statusMsg.innerText = "Недостатньо грошей на балансі!"; return; 
                 }
                 currentGlobalMoney -= totalCost;
                 currentGlobalCoins += count;
-                statusMsg.style.color = "#4edf7a"; statusMsg.innerText = `📈 Успішно куплено ${count} BB-Coin за ${totalCost.toFixed(2)}$!`;
+                statusMsg.style.color = "#4edf7a"; statusMsg.innerText = `📈 Куплено ${count} BB-Coin за ${totalCost.toFixed(2)}$!`;
             } else {
                 if (currentGlobalCoins < count) { 
-                    statusMsg.style.color = "#ff4d4d"; statusMsg.innerText = "У тебе немає стільки коїнів у крипто-гаманці!"; return; 
+                    statusMsg.style.color = "#ff4d4d"; statusMsg.innerText = "У тебе немає стільки коїнів!"; return; 
                 }
                 currentGlobalMoney += totalCost;
                 currentGlobalCoins -= count;
-                statusMsg.style.color = "#ff4d4d"; statusMsg.innerText = `📉 Успішно продано ${count} BB-Coin за ${totalCost.toFixed(2)}$!`;
+                statusMsg.style.color = "#ff4d4d"; statusMsg.innerText = `📉 Продано ${count} BB-Coin за ${totalCost.toFixed(2)}$!`;
             }
 
             document.getElementById('crypto-user-coins').innerText = currentGlobalCoins;
@@ -925,18 +1059,114 @@
             document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
             updateStatusText();
 
-            // Оновлення гаманця в базі
             await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney, bobr_coins: currentGlobalCoins });
         }
 
-        // 🪪 КУПІВЛЯ ПАСПОРТА (Оновлення таблиці `stuff` як true (1))
+        // 💬 ЛОГІКА БОБРОВОГО ЧАТУ (ЗАВАНТАЖЕННЯ ТА НАДІСЛАННЯ З ФОТО)
+        async function loadChatMessages() {
+            const container = document.getElementById('chat-messages-container');
+            try {
+                // Завантажуємо останні 40 повідомлень, сортуємо за id
+                const { data, error } = await mySupabase.from('bober_chat').select('*').order('id', { ascending: false }).limit(40);
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = "<p style='color:#aaa; text-align:center; font-style:italic;'>У чаті пусто... Напиши перше слово у Боброборії!</p>";
+                    return;
+                }
+
+                container.innerHTML = "";
+                // Розвертаємо масив, щоб старі були вгорі, нові внизу
+                data.reverse().forEach(msg => {
+                    const row = document.createElement('div');
+                    row.classList.add('chat-msg-row');
+                    
+                    let imgTag = "";
+                    if (msg.image_url && msg.image_url.trim() !== "") {
+                        imgTag = `<img src="${msg.image_url}" class="chat-msg-img" alt="Фото від Бобра">`;
+                    }
+
+                    row.innerHTML = `
+                        <div class="chat-msg-user">🦫 user_${msg.login}:</div>
+                        <div class="chat-msg-text">${msg.message}</div>
+                        ${imgTag}
+                    `;
+                    container.appendChild(row);
+                });
+                // Скролимо чат вниз на останні повідомлення
+                container.scrollTop = container.scrollHeight;
+            } catch (err) {
+                container.innerHTML = "<p style='color:#ff4d4d; text-align:center;'>Помилка зв'язку з сервером чату</p>";
+            }
+        }
+
+        // Конвертація файлу локального комп'ютера користувача в рядок Base64
+        function handleFileAsBase64(inputElement) {
+            const file = inputElement.files[0];
+            const statusLabel = document.getElementById('file-status-label');
+            if (!file) return;
+
+            // Перевірка на розмір файлу (для Base64 в базу краще брати невеликі файли до 1.5-2 Мб)
+            if (file.size > 2 * 1024 * 1024) {
+                alert("Ого, ця фотка занадто важка! Бобри не дотягнуть її до бази. Спробуй файл менше 2МБ.");
+                inputElement.value = "";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = function () {
+                base64ImageString = reader.result; // Готовий рядок зображення
+                statusLabel.style.display = "block";
+                statusLabel.innerText = `✔ Фото "${file.name.substring(0, 10)}..." успішно стиснуто!`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function sendChatMessage() {
+            const textInput = document.getElementById('chat-msg-input');
+            const urlInput = document.getElementById('chat-img-url');
+            const fileInput = document.getElementById('chat-file-input');
+            const statusLabel = document.getElementById('file-status-label');
+
+            const messageText = textInput.value.trim();
+            // Пріоритет: спочатку береться Base64 файл, якщо немає — лінк з поля URL
+            let finalImageUrl = base64ImageString ? base64ImageString : urlInput.value.trim();
+
+            if (messageText === "" && finalImageUrl === "") {
+                alert("Неможливо відправити пусте повідомлення без тексту або фотографії!");
+                return;
+            }
+
+            try {
+                const { error } = await mySupabase.from('bober_chat').insert([{
+                    login: currentGlobalUser,
+                    message: messageText ? messageText : "🌲 [Надіслав фотографію греблі]",
+                    image_url: finalImageUrl
+                }]);
+                if (error) throw error;
+
+                // Очищаємо поля після успіху
+                textInput.value = "";
+                urlInput.value = "";
+                fileInput.value = "";
+                base64ImageString = "";
+                statusLabel.style.display = "none";
+
+                // Перемальовуємо стрічку чату
+                await loadChatMessages();
+            } catch (err) {
+                alert("Помилка відправки: " + err.message);
+            }
+        }
+
+        // 🪪 КУПІВЛЯ ПАСПОРТА (Таблиця `stuff`)
         async function buyPassportItem() {
             const statusMsg = document.getElementById('shop-status-message');
             if (hasPassport) { 
                 statusMsg.style.color = "#ff4d4d"; statusMsg.innerText = "У тебе вже оформлений Державний Паспорт Бобра!"; return; 
             }
             if (currentGlobalMoney < 1000) { 
-                statusMsg.style.color = "#ff4d4d"; statusMsg.innerText = "Помилка: Недостатньо коштів! Паспорт коштує 1000.00 $"; return; 
+                statusMsg.style.color = "#ff4d4d"; statusMsg.innerText = "Помилка: Паспорт коштує 1000.00 $"; return; 
             }
 
             currentGlobalMoney -= 1000;
@@ -946,7 +1176,6 @@
             document.getElementById('menu-passport-item').classList.remove('hidden');
             updateStatusText();
 
-            // Записуємо дані у дві таблиці в базі даних
             await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney, bobr_coins: currentGlobalCoins });
             await mySupabase.from('stuff').upsert({ login: currentGlobalUser, has_passport: true, in_delivery: itemInDelivery, owned_items: ownedItemsList });
 
@@ -954,13 +1183,13 @@
             statusMsg.innerText = "✔ Державний Паспорт успішно виготовлено та внесено в систему `stuff`!";
         }
 
-        // 🛒 СИСТЕМА КУПІВЛІ ТОВАРІВ ТА ПАМ'ЯТІ ПРО ДОСТАВКУ (ТАБЛИЦЯ `stuff`)
+        // 🛒 СИСТЕМА КУПІВЛІ ТОВАРІВ
         async function buyProduct(name, price, btnId) {
             if (currentGlobalMoney < price) { 
                 document.getElementById('shop-status-message').innerText = "Мало баксів! Йди рубай ліс!"; return; 
             }
             if (itemInDelivery) { 
-                document.getElementById('shop-status-message').innerText = "Помилка: Зачекай, поки доїде твій попередній вантаж!"; return; 
+                document.getElementById('shop-status-message').innerText = "Зачекай, поки доїде твій попередній вантаж!"; return; 
             }
 
             selectedProduct = name;
@@ -972,12 +1201,11 @@
 
             setTimeout(async function() {
                 currentGlobalMoney -= selectedPrice;
-                itemInDelivery = selectedProduct; // Локальний трекінг доставки
+                itemInDelivery = selectedProduct;
 
                 document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
                 updateStatusText();
 
-                // Синхронізація з Supabase
                 await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney, bobr_coins: currentGlobalCoins });
                 await mySupabase.from('stuff').upsert({ login: currentGlobalUser, has_passport: hasPassport, in_delivery: itemInDelivery, owned_items: ownedItemsList });
 
@@ -987,28 +1215,24 @@
             }, 2000);
         }
 
-        // Підтвердження доставки та занесення майна до списку куплених речей
         async function confirmDelivery() {
             const method = document.getElementById('delivery-method').value;
             document.getElementById('shop-delivery').classList.add('hidden');
 
-            // Парсимо список та додаємо новий елемент
             let currentItems = ownedItemsList ? ownedItemsList.split(',') : [];
             currentItems.push(selectedProduct);
             ownedItemsList = currentItems.join(',');
 
-            // Зберігаємо товар у доставці назавжди, як пам'ять у базі даних!
             await mySupabase.from('stuff').upsert({ login: currentGlobalUser, has_passport: hasPassport, in_delivery: itemInDelivery, owned_items: ownedItemsList });
             updateInventoryUI();
 
             document.getElementById('shop-status-message').innerHTML = `
-                <span style="color: #4edf7a;">✔ Гроші списино! Списано ${selectedPrice.toFixed(2)} $!</span><br>
+                <span style="color: #4edf7a;">✔ Списано ${selectedPrice.toFixed(2)} $!</span><br>
                 Обрана служба: <b>${method}</b><br>
                 <span style="color: #ff4d4d; font-style:italic;">⚠ Кур'єри застрягли на греблі. Товар записано в систему доставки вашого профілю назавжди!</span>
             `;
         }
 
-        // Оновлення інтерфейсу інвентарю користувача
         function updateInventoryUI() {
             const el = document.getElementById('inv-items-list');
             if(el) { 
@@ -1016,7 +1240,6 @@
             }
         }
 
-        // Оновлення інтерфейсу паспорта
         function updatePassportUI() {
             document.getElementById('pass-name').innerText = currentGlobalUser;
             document.getElementById('pass-cash').innerText = currentGlobalMoney.toFixed(2) + " $";
@@ -1029,7 +1252,7 @@
             document.getElementById('pass-rep').innerText = rep;
         }
 
-        // 💎 ЕНДГЕЙМ МЕХАНІКА: КУПІВЛЯ АНТИМАТЕРІЇ ДЛЯ МІЛІАРДЕРІВ
+        // 💎 ЕНДГЕЙМ АНТИМАТЕРІЯ
         async function buyAntimatter() {
             if (currentGlobalMoney < 1000000000) {
                 alert("Помилка: Одна капсула Антиматерії Бобра коштує 1 000 000 000 $. Тобі ще далеко до створення всесвіту!"); return;
@@ -1038,10 +1261,8 @@
             document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
             updateStatusText();
 
-            // Оновлення рахунку
             await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney, bobr_coins: currentGlobalCoins });
 
-            // Запис антиматерії до інвентарю таблиці stuff
             let currentItems = ownedItemsList ? ownedItemsList.split(',') : [];
             currentItems.push("Антиматерія");
             ownedItemsList = currentItems.join(',');
@@ -1057,7 +1278,6 @@
             return itemsStr.split(',').filter(x => x.trim() === "Антиматерія").length;
         }
 
-        // Спеціальний лідерборд для вкладки мільярдерів
         async function loadColliderLeaderboard() {
             const container = document.getElementById('collider-leaderboard');
             container.innerHTML = "Сканування чорних дір та бази даних...";
@@ -1065,12 +1285,10 @@
                 const { data, error } = await mySupabase.from('stuff').select('*');
                 if (error) throw error;
                 
-                // Рахуємо кількість купленої антиматерії для кожного аккаунта
                 let leaders = data.map(p => {
                     return { login: p.login, count: countAntimatter(p.owned_items) };
                 }).filter(p => p.count > 0).sort((a,b) => b.count - a.count);
 
-                // Відображаємо кількість у поточного користувача
                 let myCount = leaders.find(l => l.login === currentGlobalUser)?.count || 0;
                 document.getElementById('user-antimatter-display').innerText = myCount;
 
@@ -1086,10 +1304,10 @@
                         <div style='color:#c084fc; font-weight:bold;'>${l.count} капс.</div>
                     </div>`;
                 });
-            } catch (err) { container.innerHTML = "Помилка зв'язку з Коллайдером"; }
+            } catch (err) { container.innerHTML = "Помилка зв'язку з Коллайдермо"; }
         }
 
-        // 💸 ШВИДКІ ТРАНЗАКЦІЇ ТА ПЕРЕКАЗИ МІЖ КОРЕНЯМИ
+        // 💸 ШВИДКІ ТРАНЗАКЦІЇ
         async function sendMoneyTransaction() {
             const targetUser = document.getElementById('transfer-target').value.trim();
             const amountStr = document.getElementById('transfer-amount').value.trim();
@@ -1107,24 +1325,21 @@
 
             setTimeout(async function() {
                 try {
-                    // Перевіряємо наявність отримувача в базі
                     const { data: targetData } = await mySupabase.from('user_money').select('*').eq('login', targetUser);
                     if (!targetData || targetData.length === 0) {
-                        resetTransferForm(); statusMsg.innerText = "Користувача з таким логіном не знайдено в базі!"; return;
+                        resetTransferForm(); statusMsg.innerText = "Користувача не знайдено в базі лісу!"; return;
                     }
                     let targetMoney = parseFloat(targetData[0].money || 0);
 
-                    // Знімаємо з відправника
                     currentGlobalMoney -= amount;
                     await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney, bobr_coins: currentGlobalCoins });
 
-                    // Додаємо отримувачу
                     targetMoney += amount;
                     await mySupabase.from('user_money').upsert({ login: targetUser, money: targetMoney, bobr_coins: targetData[0].bobr_coins });
 
                     document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
                     updateStatusText(); resetTransferForm();
-                    statusMsg.style.color = "#4edf7a"; statusMsg.innerText = `✔ Транзакція успішна! Списано та переказано ${amount}$ для користувача ${targetUser}!`;
+                    statusMsg.style.color = "#4edf7a"; statusMsg.innerText = `✔ Транзакція успішна! Переказано ${amount}$ користувачу ${targetUser}!`;
                 } catch (e) { resetTransferForm(); statusMsg.innerText = "Глобальна помилка під час обробки транзакції"; }
             }, 2000);
         }
@@ -1134,7 +1349,7 @@
             document.getElementById('transfer-loading').classList.add('hidden');
         }
 
-        // Завантаження глобального ТОП-10
+        // Завантаження ТОП-10
         async function loadLeaderboard() {
             const container = document.getElementById('leaderboard-container');
             container.innerHTML = `<p style="text-align:center; color:#aaa;">Зв'язуємося з сервером, сортуємо бобрів...</p>`;
@@ -1174,10 +1389,8 @@
             creditIntervalId = setInterval(async function() {
                 if (currentGlobalDebt <= 0) { clearInterval(creditIntervalId); return; }
                 
-                // Відсоток за боргом зростає на 5% кожні 10 секунд!
                 currentGlobalDebt += currentGlobalDebt * 0.05;
                 
-                // Автоматичне списання, якщо на рахунку є гроші
                 if (currentGlobalMoney > 0) {
                     let pay = Math.min(currentGlobalMoney, currentGlobalDebt);
                     currentGlobalMoney -= pay; currentGlobalDebt -= pay;
@@ -1228,7 +1441,7 @@
                     document.getElementById('casino-status-message').innerText = `🎰 Подвійний виграш! Ви забираєте ${win.toFixed(2)} $!`;
                     document.getElementById('casino-status-message').style.color = "#ffbf69";
                 } else {
-                    document.getElementById('casino-status-message').innerText = `💸 Азарт губить! Ставка згоріла. Спробуйте ще раз!`;
+                    document.getElementById('casino-status-message').innerText = `💸 Азарт губить! Ставка згоріла.`;
                     document.getElementById('casino-status-message').style.color = "#ff4d4d";
                 }
                 
@@ -1239,7 +1452,7 @@
             }, 1200);
         }
 
-        // Механіка перукарні
+        // Перукарня
         function generateNewBarberCustomer() {
             isBarberProcessing = false; 
             currentBarberClicks = 0; 
@@ -1270,7 +1483,7 @@
             }
         }
 
-        // Динамічний текст статусу бідності / багатства
+        // Текст бідності
         function updateStatusText() {
             const bomzhTextElement = document.querySelector('.bomzh-text'); 
             if (!bomzhTextElement) return;
@@ -1291,7 +1504,7 @@
             }
         }
 
-        // Робота клікера
+        // Лісоповал
         async function clickBeaver() {
             currentGlobalMoney += 0.10;
             document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
@@ -1308,17 +1521,27 @@
                 document.getElementById('loading-section').classList.add('hidden');
                 document.getElementById('buy-btn').disabled = false;
                 document.getElementById('status-message').style.color = "#ff4d4d";
-                document.getElementById('status-message').innerText = "❌ Помилка: Всі преміальні пластикові VIP-картки розібрали олігархи! Спробуйте пізніше.";
+                document.getElementById('status-message').innerText = "❌ Помилка: Всі преміальні пластикові VIP-картки розібрали олігархи!";
             }, 10000);
         }
 
-        // Реєстрація аккаунта в базі
+        // 🥚 АКТИВАЦІЯ ПАСХАЛКИ 2.0.1
+        function triggerEasterEgg() {
+            // Нараховуємо секретну боброву субсидію за уважність та міняємо колір сайту на кислотний
+            currentGlobalMoney += 201.00;
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            updateStatusText();
+            
+            document.body.style.background = "linear-gradient(45deg, #120c1f, #1a0533, #05221a)";
+            alert("💥 ПАСХАЛКА АКТИВОВАНА! Версія 2.0.1 приносить тобі секретну субсидію від розробників: +201.00 $ на рахунок! Космічний простір активовано.");
+        }
+
+        // Реєстрація
         async function registerUser() {
             const loginInput = document.getElementById('reg-login').value.trim();
             const passInput = document.getElementById('reg-password').value.trim();
             if (!loginInput || !passInput) { alert("Заповніть поля реєстрації!"); return; }
             try {
-                // Створюємо записи в трьох таблицях одночасно
                 await mySupabase.from('passcodes').insert([{ login: loginInput, password: passInput }]);
                 await mySupabase.from('user_money').insert([{ login: loginInput, money: 0, bobr_coins: 0 }]);
                 await mySupabase.from('stuff').insert([{ login: loginInput, has_passport: false, in_delivery: "", owned_items: "" }]);
@@ -1327,7 +1550,7 @@
             } catch (err) { alert("Помилка: Користувач з таким логіном вже зайняв дупло!"); }
         }
 
-        // Логін аккаунта
+        // Логін
         async function loginUser() {
             const loginIn = document.getElementById('login-username').value.trim();
             const passIn = document.getElementById('login-password').value.trim();
@@ -1342,13 +1565,13 @@
                     document.getElementById('menu-trigger').classList.remove('hidden');
                     
                     await fetchUserMoney();
-                    await fetchUserStuff(); // Оновлюємо речі та паспорт
+                    await fetchUserStuff();
                     
                     document.getElementById('login-box').classList.add('hidden');
                     showSection('balance-sec');
-                    startGlobalSync(); // Активація світової біржі
-                    spawnFlyingWords(); // Запуск літаючих слів
-                } else { alert("Помилка автентифікації: Невірний пароль або логін!"); }
+                    startGlobalSync();
+                    spawnFlyingWords();
+                } else { alert("Помилка автентифікації!"); }
             } catch (err) { alert(err.message); }
         }
 
