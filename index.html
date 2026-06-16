@@ -2,102 +2,1177 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Bober-Bank: Бобровий Капіталізм</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOBER-BANK — Офіційний сайт</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #1e1e24; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        .container { background: #2a2a35; padding: 20px; border-radius: 10px; width: 320px; margin-top: 50px; text-align: center; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e24;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            transition: background 0.5s ease;
+            overflow-x: hidden;
+        }
+
+        body.logged-in {
+            background-color: #3d2314;
+        }
+
+        header {
+            background-color: #ff9f1c;
+            width: 100%;
+            text-align: center;
+            padding: 20px 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: relative;
+            transition: background 0.5s ease;
+            z-index: 20;
+        }
+
+        header.logged-in-header {
+            background-color: #8e5a36;
+        }
+
+        header h1 { margin: 0; color: #1e1e24; font-size: 2.5rem; }
+        header.logged-in-header h1 { color: #fff; }
+
+        .container {
+            background-color: #2a2a35;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            width: 350px;
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+            z-index: 10;
+        }
+
         .hidden { display: none !important; }
-        button { background: #ff9f1c; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        input { width: 100%; padding: 8px; margin: 5px 0; box-sizing: border-box; }
-        .nav { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
-        .bass-mode { animation: shake 0.2s infinite; }
-        @keyframes shake { 0%{transform:translate(1px, 1px)} 50%{transform:translate(-1px, -1px)} }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 6px;
+            box-sizing: border-box;
+            background-color: #3f3f50;
+            color: #fff;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff9f1c;
+            border: none;
+            border-radius: 6px;
+            color: #1e1e24;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #e08b14; }
+        button:disabled { background-color: #555 !important; color: #aaa; cursor: not-allowed; }
+
+        .switch-link { margin-top: 15px; font-size: 0.9rem; color: #ff9f1c; cursor: pointer; text-decoration: underline; }
+        
+        /* МАГАЗИН ТА БАС-АНІМАЦІЯ */
+        #shop-items-container {
+            transition: transform 0.1s ease-out;
+        }
+
+        .bass-mode {
+            animation: bass-bounce 0.35s infinite alternate ease-in-out;
+        }
+
+        @keyframes bass-bounce {
+            0% { transform: scale(1.0); }
+            100% { transform: scale(0.96); }
+        }
+
+        .shop-item {
+            background-color: #4d3120;
+            border: 2px solid #ff9f1c;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            transition: transform 0.1s;
+        }
+        
+        .shop-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 159, 28, 0.3);
+        }
+
+        .shop-item img {
+            width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        .shop-item h3 { margin: 5px 0; }
+        .price-tag { color: #4edf7a; font-weight: bold; font-size: 1.2rem; }
+
+        /* ЛІТАЮЧІ СЛОВА */
+        .flying-word {
+            position: fixed;
+            color: rgba(255, 255, 255, 0.12);
+            font-weight: bold;
+            font-size: 1.8rem;
+            white-space: nowrap;
+            user-select: none;
+            pointer-events: none;
+            z-index: 1;
+            animation: fly-around 12s infinite linear;
+        }
+
+        @keyframes fly-around {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(120vw, 30vh) rotate(90deg); }
+            50% { transform: translate(50vw, 90vh) rotate(180deg); }
+            75% { transform: translate(-20vw, 60vh) rotate(270deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+
+        .bank-image { width: 100%; max-width: 250px; border-radius: 8px; margin-bottom: 15px; border: 3px solid #ff9f1c; cursor: pointer; transition: transform 0.1s; }
+        .bank-image:active { transform: scale(0.95); }
+
+        /* СТИЛІ ДЛЯ ПАРИХМАРКИ */
+        .barber-image {
+            width: 100%;
+            max-width: 250px;
+            border-radius: 12px;
+            border: 4px solid #ff9f1c;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+            margin-bottom: 15px;
+        }
+        .barber-image:active { transform: scale(0.97) rotate(2deg); }
+        .barber-success { filter: drop-shadow(0 0 15px #4edf7a); }
+
+        /* СТИЛІ ДЛЯ КАЗІКА */
+        .slots-display {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            background-color: #15151a;
+            padding: 15px;
+            border-radius: 10px;
+            border: 3px dashed #ff9f1c;
+        }
+        .slot-box {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background-color: #22222b;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: 2px solid #555;
+            color: #ff9f1c;
+            user-select: none;
+        }
+        .audio-toggle-btn {
+            background-color: #3f3f50;
+            color: #fff;
+            border: 2px solid #ff9f1c;
+            font-size: 1.3rem;
+            width: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            margin-bottom: 15px;
+            border-radius: 30px;
+        }
+        .audio-toggle-btn:hover { background-color: #4f4f64; }
+
+        /* СТИЛІ ТАБЛИЦІ ЛІДЕРІВ */
+        .leaderboard-list {
+            text-align: left;
+            background: #15151a;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #ff9f1c;
+        }
+        .leader-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            font-size: 1.1rem;
+        }
+        .leader-row:last-child { border-bottom: none; }
+        .leader-rank { font-weight: bold; color: #ff9f1c; width: 30px; }
+        .leader-name { flex-grow: 1; }
+        .leader-money { color: #4edf7a; font-weight: bold; }
+
+        /* СТИЛІ КРЕДИТІВ */
+        .credit-card {
+            background-color: #382418;
+            border: 2px solid #ff4d4d;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .loader { border: 6px solid #3f3f50; border-top: 6px solid #ff9f1c; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #status-message, #shop-status-message, #transfer-status-message, #barber-status-message, #casino-status-message, #credit-status-message { font-weight: bold; font-size: 1.1rem; color: #ff4d4d; margin-top: 15px; z-index: 10; position: relative; }
+        .bomzh-text { font-weight: bold; font-style: italic; margin-top: 10px; }
+        
+        .tip-box {
+            background-color: #343444;
+            border-left: 5px solid #ff9f1c;
+            padding: 10px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-style: italic;
+            color: #ffbf69;
+        }
+
+        .menu-btn {
+            position: absolute;
+            left: 20px;
+            top: 22px;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #1e1e24;
+            user-select: none;
+        }
+        header.logged-in-header .menu-btn { color: #fff; }
+
+        .sidebar {
+            position: fixed;
+            left: -260px;
+            top: 0;
+            width: 240px;
+            height: 100%;
+            background-color: #22120a;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+            transition: 0.3s;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 100;
+            text-align: left;
+        }
+        .sidebar.active { left: 0; }
+        .sidebar h3 { margin-top: 0; color: #ff9f1c; border-bottom: 1px solid #ff9f1c; padding-bottom: 10px; }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar ul li { padding: 12px 10px; color: #fff; cursor: pointer; border-radius: 6px; font-weight: bold; transition: 0.2s; font-size: 0.95rem; }
+        .sidebar ul li:hover { background-color: #8e5a36; }
+        
+        .close-sidebar-btn { text-align: right; font-size: 1.5rem; cursor: pointer; color: #ff9f1c; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <header><h1>🦫 BOBER-BANK</h1></header>
+    <audio id="bg-music" src="music.mp4" loop></audio>
 
-    <div id="auth-sec" class="container">
-        <h2>Реєстрація / Вхід</h2>
-        <input type="text" id="reg-login" placeholder="Логін">
-        <input type="password" id="reg-pass" placeholder="Пароль">
-        <button onclick="handleAuth('reg')">Зареєструватися</button>
-        <button onclick="handleAuth('login')">Увійти</button>
+    <div id="shop-background-words"></div>
+
+    <header id="main-header">
+        <div id="menu-trigger" class="menu-btn hidden" onclick="toggleSidebar(true)">☰</div>
+        <h1 id="header-title">🦫 BOBER-BANK</h1>
+    </header>
+
+    <div id="sidebar" class="sidebar">
+        <div class="close-sidebar-btn" onclick="toggleSidebar(false)">✖</div>
+        <h3>Menu Бобра</h3>
+        <ul>
+            <li onclick="showSection('balance-sec')">💰 Баланс</li>
+            <li onclick="showSection('card-sec')">💳 Замовити картку</li>
+            <li onclick="showSection('job-sec')">🔨 Робота (Клікер)</li>
+            <li onclick="showSection('shop-sec')">🛒 Магазин Бобра</li>
+            <li onclick="showSection('transfer-sec')">💸 Переказ Бобро-Баксів</li>
+            <li onclick="showSection('barber-sec')">💈 Парихмарка Бобра</li>
+            <li onclick="showSection('casino-sec')">🎰 Казік Бобра</li>
+            <li onclick="showSection('leaderboard-sec')">🏆 Таблиця лідерів</li>
+            <li onclick="showSection('credit-sec')">🚨 Бобровий Кредит</li>
+        </ul>
     </div>
 
-    <div id="nav-menu" class="nav hidden">
-        <button onclick="showSec('balance-sec')">💰 Баланс</button>
-        <button onclick="showSec('card-sec')">💳 Картка</button>
-        <button onclick="showSec('job-sec')">🔨 Клікер</button>
-        <button onclick="showSec('chat-sec')">💬 Чат</button>
-        <button onclick="showSec('shop-sec')">🛒 Магазин</button>
-        <button onclick="showSec('casino-sec')">🎰 Казік</button>
+    <div id="register-box" class="container">
+        <h2>Реєстрація у Бобер-Банку</h2>
+        <input type="text" id="reg-login" placeholder="Придумайте логін" required>
+        <input type="password" id="reg-password" placeholder="Придумайте пароль" required>
+        <button onclick="registerUser()">Зареєструватися</button>
+        <div class="switch-link" onclick="toggleForms('login')">Вже є акаунт? Увійти</div>
     </div>
 
-    <div id="balance-sec" class="container hidden bank-sec"><h2>Баланс: <span id="bal">0</span> $</h2></div>
-    <div id="card-sec" class="container hidden bank-sec">
-        <h2>VIP-Картка</h2>
-        <button id="card-btn" onclick="orderCard()">Замовити</button>
-        <p id="card-msg"></p>
+    <div id="login-box" class="container hidden">
+        <h2>Вхід в систему</h2>
+        <input type="text" id="login-username" placeholder="Логін">
+        <input type="password" id="login-password" placeholder="Пароль">
+        <button onclick="loginUser()">Увійти</button>
+        <div class="switch-link" onclick="toggleForms('register')">Назад до реєстрації</div>
     </div>
-    <div id="job-sec" class="container hidden bank-sec">
-        <h2>Лісоповал</h2>
-        <button onclick="clickJob()">Рубати ($0.10)</button>
+
+    <div id="balance-sec" class="container hidden bank-section">
+        <h2>Твій особистий баланс</h2>
+        <h1 style="color: #4edf7a; font-size: 3rem; margin: 10px 0;"><span id="user-money-display">0.00</span> $</h1>
+        
+        <div id="debt-alert-box" class="hidden" style="background:#ff4d4d; color:#fff; padding:8px; border-radius:6px; margin:10px 0; font-weight:bold;">
+            ⚠ ТВІЙ БОРГ БАНКУ: <span id="current-debt-display">0.00</span> $
+        </div>
+
+        <div class="bomzh-text">ех у тебе немає ні бакса який ж ти бомж</div>
     </div>
-    <div id="chat-sec" class="container hidden bank-sec">
-        <h2>Бобро-Чат</h2>
-        <div id="chat-win" style="height:150px; overflow-y:scroll; background:#000;"></div>
-        <input id="chat-msg" placeholder="Текст...">
-        <button onclick="sendChat()">Надіслати</button>
+
+    <div id="card-sec" class="container hidden bank-section">
+        <h2>Оформити VIP-картку "Бобер"</h2>
+        <p>Унікальний дизайн з чистим бобровим хутром!</p>
+        <img src="beaver.jpeg" alt="Преміальний Бобер" style="width:100%; max-width:250px; border-radius:8px; border: 3px solid #ff9f1c; margin-bottom:10px;">
+        
+        <button id="buy-btn" onclick="startLoading()">Замовити картку</button>
+
+        <div id="loading-section" class="hidden">
+            <div class="loader"></div>
+            <p>Обробка транзакції банком... Зачекайте 10 секунд</p>
+        </div>
+        <div id="status-message"></div>
     </div>
-    <div id="shop-sec" class="container hidden bank-sec"><h2>🛒 Магазин (Бас-режим)</h2><audio id="shop-audio" loop src="music.mp4"></audio></div>
-    <div id="casino-sec" class="container hidden bank-sec"><h2>🎰 Казік</h2><button onclick="playCasino()">Крутити</button></div>
+
+    <div id="job-sec" class="container hidden bank-section">
+        <h2>Лісоповал Бобрів 🔨</h2>
+        <p>Клікай на бобра, щоб рубати ліс і заробляти гроші!</p>
+        <p>За кожен клік: <span style="color:#ff9f1c; font-weight:bold;">+0.10 $</span></p>
+        
+        <img src="beaver.jpeg" alt="Працюючий Бобер" class="bank-image" onclick="clickBeaver()">
+        
+        <h3>Зароблено всього: <span id="clicker-money">0.00</span> $</h3>
+    </div>
+
+    <div id="shop-sec" class="container hidden bank-section">
+        <h2>🛒 Магазин Бобра</h2>
+        <p>Купуй елітну боброву нерухомість та напої!</p>
+
+        <div id="shop-items-container">
+            <div class="shop-item">
+                <img src="sarai.png" alt="Сарай">
+                <h3>Елітний Сарай</h3>
+                <p class="price-tag">10.00 $</p>
+                <button id="btn-sarai" onclick="buyProduct('Елітний Сарай', 10.00, 'btn-sarai')">Купити Сарай</button>
+            </div>
+
+            <div class="shop-item">
+                <img src="kvart.png" alt="Квартира">
+                <h3>Люкс Квартира</h3>
+                <p class="price-tag">50.00 $</p>
+                <button id="btn-kvart" onclick="buyProduct('Люкс Квартира', 50.00, 'btn-kvart')">Купити Квартиру</button>
+            </div>
+
+            <div class="shop-item">
+                <img src="bobr.png" alt="Квас">
+                <h3>Бобровий Квас (0.5л)</h3>
+                <p class="price-tag">8.00 $</p>
+                <button id="btn-bobr" onclick="buyProduct('Бобровий Квас', 8.00, 'btn-bobr')">Купити Квас</button>
+            </div>
+
+            <div class="shop-item">
+                <img src="dollar.png" alt="Магічні 5 баксів">
+                <h3>Магічна Купюра (5$)</h3>
+                <p class="price-tag">5.00 $</p>
+                <button id="btn-dollar" onclick="buyProduct('Магічна Купюра (5$)', 5.00, 'btn-dollar')">Купити 5 баксів</button>
+            </div>
+        </div>
+
+        <div id="shop-loading" class="hidden">
+            <div class="loader"></div>
+            <p id="shop-loading-text">З'єднюємося з магазином...</p>
+        </div>
+
+        <div id="shop-delivery" class="hidden">
+            <h3>📦 Оформлення бобро-доставки</h3>
+            <p>Ви купуєте: <span id="delivery-item-name" style="color:#ff9f1c; font-weight:bold;"></span></p>
+            
+            <label>Вибір місця видачі:</label>
+            <select id="delivery-method">
+                <option value="Нова Пошта">Нова Пошта</option>
+                <option value="Укр Пошта">Укр Пошта</option>
+                <option value="Бобр Шопс">Бобр Шопс</option>
+            </select>
+
+            <label>Місце призначення:</label>
+            <select id="delivery-destination">
+                <option value="Україна">Україна</option>
+                <option value="Бобростік">Бобростік</option>
+                <option value="Бобренятко">Бобренятко</option>
+            </select>
+
+            <button onclick="confirmDelivery()">Оформити замовлення</button>
+        </div>
+
+        <div id="shop-status-message"></div>
+    </div>
+
+    <div id="transfer-sec" class="container hidden bank-section">
+        <h2>💸 Швидкий Бобро-Переказ</h2>
+        <p>Перекинь бакси іншому учаснику банку за логіном!</p>
+        
+        <div id="transfer-form">
+            <input type="text" id="transfer-target" placeholder="Логін отримувача (друга)">
+            <input type="number" id="transfer-amount" step="0.01" min="0.1" placeholder="Сума в баксах ($)">
+            <button onclick="sendMoneyTransaction()">Надіслати гроші</button>
+        </div>
+
+        <div id="transfer-loading" class="hidden">
+            <div class="loader"></div>
+            <p style="color:#ff9f1c; font-weight:bold;">Бобри перераховують купюри... ⏳</p>
+            <div class="tip-box">
+                <b>Порада:</b> <span id="transfer-tip-text">завантаження...</span>
+            </div>
+        </div>
+
+        <div id="transfer-status-message"></div>
+    </div>
+
+    <div id="barber-sec" class="container hidden bank-section">
+        <h2>💈 Елітна Парихмарка Бобра</h2>
+        <p>Клікай на волохатого бобра, щоб зробити йому стрижку!</p>
+        <h3 id="clicks-left-display" style="color: #ff9f1c;">Залишилося зрізати: —</h3>
+        
+        <img id="barber-bober-img" src="nocut.png" alt="Волохатий Бобер" class="barber-image" onclick="clickBarberBober()">
+        
+        <div id="barber-status-message"></div>
+    </div>
+
+    <div id="casino-sec" class="container hidden bank-section">
+        <h2>🎰 Казік Бобра (Азартний Лудо-Рай)</h2>
+        <p>Ризикни бобро-баксами! Множ свою ставку прямо зараз.</p>
+
+        <button id="casino-audio-btn" class="audio-toggle-btn" onclick="toggleCasinoMusic()">
+            <span id="casino-audio-icon">🔊</span> <span id="casino-audio-text">Ввімкнути Мем-Музику</span>
+        </button>
+
+        <div class="slots-display">
+            <div id="slot-1" class="slot-box">7</div>
+            <div id="slot-2" class="slot-box">7</div>
+            <div id="slot-3" class="slot-box">7</div>
+        </div>
+
+        <div id="casino-form">
+            <input type="number" id="casino-bet" min="1" step="0.5" placeholder="Введіть суму ставки ($)">
+            <button id="roll-slots-btn" onclick="playCasinoSlots()">Крутити Бобро-Слот 🚀</button>
+        </div>
+
+        <div id="casino-status-message"></div>
+    </div>
+
+    <div id="leaderboard-sec" class="container hidden bank-section">
+        <h2>🏆 Хто найбагатший бобер?</h2>
+        <p>Світовий рейтинг елітних лісорубів та магнатів:</p>
+        
+        <div id="leaderboard-container" class="leaderboard-list">
+            <p style="text-align:center; color:#aaa;">Завантаження рейтингу бобрів...</p>
+        </div>
+        <button onclick="loadLeaderboard()" style="margin-top:15px; background-color:#4edf7a;">🔄 Оновити Топ</button>
+    </div>
+
+    <div id="credit-sec" class="container hidden bank-section">
+        <h2>🚨 Кредитний Відділ Бобра</h2>
+        <p>Злив усе в казіку? Візьми гроші під жорсткі боброві відсотки!</p>
+        <div style="background-color:#15151a; padding:10px; border-radius:6px; font-size:0.9rem; margin-bottom:15px; border-left:4px solid #ff4d4d;">
+            <b>Умови:</b> Нарахування кожні 10 сек (+5% від суми боргу). Банк списує гроші з балансу автоматично на погашення!
+        </div>
+
+        <div class="credit-card">
+            <h3>Мікро-Колода</h3>
+            <p>Сума: <span style="color:#4edf7a; font-weight:bold;">5.00 $</span></p>
+            <button onclick="takeBoberCredit(5.00)">Взяти 5$ в борг</button>
+        </div>
+
+        <div class="credit-card">
+            <h3>Середня Гребля</h3>
+            <p>Сума: <span style="color:#4edf7a; font-weight:bold;">20.00 $</span></p>
+            <button onclick="takeBoberCredit(20.00)">Взяти 20$ в борг</button>
+        </div>
+
+        <div class="credit-card">
+            <h3>Мега-Ліс Магната</h3>
+            <p>Сума: <span style="color:#4edf7a; font-weight:bold;">50.00 $</span></p>
+            <button onclick="takeBoberCredit(50.00)">Взяти 50$ в борг</button>
+        </div>
+
+        <div id="credit-status-message"></div>
+    </div>
 
     <script>
-        // Ініціалізація
         const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
         const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
-        const mySupabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentGlobalUser = "";
+        let currentGlobalMoney = 0.0;
+        let currentGlobalDebt = 0.0; // Нова змінна боргу
+        let selectedProduct = "";
+        let selectedPrice = 0;
+        let currentBtnId = "";
+        let purchasedItems = [];
 
-        async function handleAuth(type) {
-            currentGlobalUser = document.getElementById('reg-login').value;
-            const pass = document.getElementById('reg-pass').value;
-            // Тут твоя логіка Supabase Auth
-            alert("Вітаємо в Бобер-Банку, " + currentGlobalUser);
-            document.getElementById('auth-sec').classList.add('hidden');
-            document.getElementById('nav-menu').classList.remove('hidden');
-        }
+        let requiredBarberClicks = 0;
+        let currentBarberClicks = 0;
+        let isBarberProcessing = false;
+        
+        let isMusicPlaying = false; 
+        let creditIntervalId = null; // Інтервал для відсотків
 
-        function showSec(id) {
-            document.querySelectorAll('.bank-sec').forEach(s => s.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-            
-            if(id === 'shop-sec') {
-                document.getElementById('shop-audio').play();
-                document.body.classList.add('bass-mode');
+        const bobrPhrases = ["боброво!", "дешево!", "БОБРА!", "Купляй не пошкодиеш", "ОФІЦІЙНО", "500_строчок_кода"];
+        const bobrTips = [
+            "Не довіряйте свій пароль бобрам з сусіднього лісу!",
+            "Якщо клікати швидше, то солідним бобром можна стати за 5 хвилин.",
+            "Бобровий Квас підвищує продуктивність праці на лісоповалі на 300%.",
+            "Куплений сарай автоматично захищає ваші бобро-бакси від податків.",
+            "Найкращий спосіб вийти зі статусу бомжа — люто затиснути ліву кнопку миші.",
+            "Офіційно: Бобер-Банк не бере комісію за перекази, тільки бере колодами!"
+        ];
+
+        function setMusicState(shouldPlay) {
+            const music = document.getElementById('bg-music');
+            if (shouldPlay) {
+                music.play().then(() => { isMusicPlaying = true; updateMusicButtons(); })
+                     .catch(err => console.log("Чекаємо кліку користувача для музики"));
             } else {
-                document.getElementById('shop-audio').pause();
-                document.body.classList.remove('bass-mode');
+                music.pause();
+                isMusicPlaying = false;
+                updateMusicButtons();
             }
         }
 
-        async function orderCard() {
-            document.getElementById('card-btn').disabled = true;
-            document.getElementById('card-msg').innerText = "Обробка 10 сек...";
-            setTimeout(() => {
-                document.getElementById('card-msg').innerText = "На жаль, картки закінчилися! Бобри все з'їли.";
-                document.getElementById('card-btn').disabled = false;
-            }, 10000);
+        function updateMusicButtons() {
+            const btnText = document.getElementById('casino-audio-text');
+            const btnIcon = document.getElementById('casino-audio-icon');
+            if (isMusicPlaying) {
+                btnText.innerText = "Вимкнути Музику";
+                btnIcon.innerText = "🔇";
+            } else {
+                btnText.innerText = "Ввімкнути Мем-Музику";
+                btnIcon.innerText = "🔊";
+            }
         }
 
-        async function sendChat() {
-            const msg = document.getElementById('chat-msg').value;
-            await mySupabase.from('bober_chat').insert([{ login: currentGlobalUser, message: msg }]);
-            document.getElementById('chat-msg').value = '';
+        function toggleCasinoMusic() {
+            setMusicState(!isMusicPlaying);
+        }
+
+        function startFlyingWords() {
+            const container = document.getElementById('shop-background-words');
+            container.innerHTML = "";
+            bobrPhrases.forEach((phrase, index) => {
+                const wordEl = document.createElement('div');
+                wordEl.classList.add('flying-word');
+                wordEl.innerText = phrase;
+                wordEl.style.top = Math.random() * 80 + "vh";
+                wordEl.style.left = Math.random() * 30 + "vw";
+                wordEl.style.animationDelay = (index * 1.8) + "s";
+                wordEl.style.animationDuration = (10 + Math.random() * 6) + "s";
+                container.appendChild(wordEl);
+            });
+        }
+
+        function stopFlyingWords() {
+            document.getElementById('shop-background-words').innerHTML = "";
+        }
+
+        function toggleForms(target) {
+            if (target === 'login') {
+                document.getElementById('register-box').classList.add('hidden');
+                document.getElementById('login-box').classList.remove('hidden');
+            } else {
+                document.getElementById('login-box').classList.add('hidden');
+                document.getElementById('register-box').classList.remove('hidden');
+            }
+        }
+
+        function toggleSidebar(open) {
+            if(open) document.getElementById('sidebar').classList.add('active');
+            else document.getElementById('sidebar').classList.remove('active');
+        }
+
+        function generateNewBarberCustomer() {
+            isBarberProcessing = false;
+            currentBarberClicks = 0;
+            requiredBarberClicks = Math.floor(Math.random() * 3) + 5; 
+            
+            const boberImg = document.getElementById('barber-bober-img');
+            boberImg.src = "nocut.png";
+            boberImg.classList.remove('barber-success');
+            
+            document.getElementById('clicks-left-display').innerText = `Залишилося зрізати: ${requiredBarberClicks}`;
+            document.getElementById('barber-status-message').innerText = "Новий клієнт сів у крісло. До роботи!";
+            document.getElementById('barber-status-message').style.color = "#ff9f1c";
+        }
+
+        function showSection(sectionId) {
+            const sections = document.querySelectorAll('.bank-section');
+            sections.forEach(sec => sec.classList.add('hidden'));
+            
+            const targetSection = document.getElementById(sectionId);
+            targetSection.classList.remove('hidden');
+            
+            const shopContainer = document.getElementById('shop-items-container');
+            document.getElementById('transfer-status-message').innerText = "";
+            document.getElementById('casino-status-message').innerText = "";
+            document.getElementById('credit-status-message').innerText = "";
+
+            if (sectionId === 'barber-sec') generateNewBarberCustomer();
+            if (sectionId === 'leaderboard-sec') loadLeaderboard();
+
+            if(sectionId === 'shop-sec') {
+                setMusicState(true); 
+                shopContainer.classList.add('bass-mode');
+                startFlyingWords();
+                shopContainer.classList.remove('hidden');
+                document.getElementById('shop-loading').classList.add('hidden');
+                document.getElementById('shop-delivery').classList.add('hidden');
+                document.getElementById('shop-status-message').innerText = "";
+                
+                purchasedItems.forEach(id => {
+                    const btn = document.getElementById(id);
+                    if(btn) {
+                        btn.innerText = "У доставці...";
+                        btn.disabled = true;
+                    }
+                });
+            } else if (sectionId === 'casino-sec') {
+                updateMusicButtons();
+                shopContainer.classList.remove('bass-mode');
+                stopFlyingWords();
+            } else {
+                setMusicState(false);
+                shopContainer.classList.remove('bass-mode');
+                stopFlyingWords();
+            }
+            
+            toggleSidebar(false);
+        }
+
+        // 🏆 ЛОГІКА ТАБЛИЦІ ЛІДЕРІВ
+        async function loadLeaderboard() {
+            const container = document.getElementById('leaderboard-container');
+            container.innerHTML = `<p style="text-align:center; color:#aaa;">Завантаження... Бобри перебирають логіни...</p>`;
+
+            try {
+                // Беремо топ користувачів, відсортованих за грошима
+                const { data, error } = await mySupabase
+                    .from('user_money')
+                    .select('*')
+                    .order('money', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+
+                container.innerHTML = "";
+                data.forEach((player, index) => {
+                    let rankIcon = index + 1;
+                    if(index === 0) rankIcon = "👑";
+                    if(index === 1) rankIcon = "🥈";
+                    if(index === 2) rankIcon = "🥉";
+
+                    // Якщо баланс від'ємний або гравець має борг (примітка)
+                    let namePrefix = "";
+                    if (player.money < 0) {
+                        namePrefix = `<span style="color:#ff4d4d; font-weight:bold;">[БОРЖНИК 🚨]</span> `;
+                    }
+
+                    const row = document.createElement('div');
+                    row.classList.add('leader-row');
+                    row.innerHTML = `
+                        <div class="leader-rank">${rankIcon}</div>
+                        <div class="leader-name">${namePrefix}${player.login}</div>
+                        <div class="leader-money">${parseFloat(player.money).toFixed(2)} $</div>
+                    `;
+                    container.appendChild(row);
+                });
+            } catch (err) {
+                container.innerHTML = `<p style="color:#ff4d4d;">Не вдалося завантажити топ: ${err.message}</p>`;
+            }
+        }
+
+        // 🚨 ЛОГІКА БОБРОВОГО КРЕДИТУ
+        async function takeBoberCredit(amount) {
+            const statusMsg = document.getElementById('credit-status-message');
+            statusMsg.innerText = "";
+            statusMsg.style.color = "#ff4d4d";
+
+            if (currentGlobalDebt > 0) {
+                statusMsg.innerText = `Помилка: Ви ще не повернули старий борг (${currentGlobalDebt.toFixed(2)}$)! Новий кредит заблоковано.`;
+                return;
+            }
+
+            currentGlobalDebt = amount;
+            currentGlobalMoney += amount;
+
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+            
+            document.getElementById('debt-alert-box').classList.remove('hidden');
+            document.getElementById('current-debt-display').innerText = currentGlobalDebt.toFixed(2);
+            updateStatusText();
+
+            statusMsg.style.color = "#4edf7a";
+            statusMsg.innerText = `✔ Банк видав вам ${amount.toFixed(2)}$! Увага: лічильник відсотків запущено.`;
+
+            await mySupabase
+                .from('user_money')
+                .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+
+            // Запускаємо цикл нарахування відсотків
+            startCreditSystem();
+        }
+
+        function startCreditSystem() {
+            if (creditIntervalId) clearInterval(creditIntervalId);
+
+            creditIntervalId = setInterval(async function() {
+                if (currentGlobalDebt <= 0) {
+                    clearInterval(creditIntervalId);
+                    document.getElementById('debt-alert-box').classList.add('hidden');
+                    return;
+                }
+
+                // Додаємо 5% відсотків до боргу
+                currentGlobalDebt += currentGlobalDebt * 0.05;
+
+                // Спроба автоматичного списання боргу з балансу гравця
+                if (currentGlobalMoney > 0) {
+                    let pay = Math.min(currentGlobalMoney, currentGlobalDebt);
+                    currentGlobalMoney -= pay;
+                    currentGlobalDebt -= pay;
+                }
+
+                // Оновлюємо інтерфейс
+                document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+                document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+                document.getElementById('current-debt-display').innerText = currentGlobalDebt.toFixed(2);
+                updateStatusText();
+
+                if (currentGlobalDebt <= 0) {
+                    clearInterval(creditIntervalId);
+                    document.getElementById('debt-alert-box').classList.add('hidden');
+                    alert("🎉 Вітаємо! Ви повністю виплатили бобровий кредит!");
+                }
+
+                // Зберігаємо оновлений баланс в базу
+                await mySupabase
+                    .from('user_money')
+                    .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+
+            }, 10000); // Кожні 10 секунд
+        }
+
+
+        // ЛОГІКА КАЗІКА БОБРА
+        async function playCasinoSlots() {
+            const betInput = document.getElementById('casino-bet').value.trim();
+            const statusMsg = document.getElementById('casino-status-message');
+            const rollBtn = document.getElementById('roll-slots-btn');
+
+            statusMsg.innerText = "";
+            statusMsg.style.color = "#ff4d4d";
+
+            if (!betInput) {
+                statusMsg.innerText = "Помилка: Введіть суму вашої ставки!";
+                return;
+            }
+
+            const bet = parseFloat(betInput);
+            if (isNaN(bet) || bet <= 0) {
+                statusMsg.innerText = "Помилка: Ставка повинна бути більшою за 0 баксів!";
+                return;
+            }
+
+            if (currentGlobalMoney < bet) {
+                statusMsg.innerText = "Помилка: Ви занадто бідний для таких ставок! Рубайте ліс або візьміть кредит.";
+                return;
+            }
+
+            rollBtn.disabled = true;
+            statusMsg.style.color = "#ff9f1c";
+            statusMsg.innerText = "Слоти крутяться... Бобри мутяться... 🎰";
+
+            currentGlobalMoney -= bet;
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+            updateStatusText();
+
+            let interval = setInterval(() => {
+                document.getElementById('slot-1').innerText = Math.floor(Math.random() * 10);
+                document.getElementById('slot-2').innerText = Math.floor(Math.random() * 10);
+                document.getElementById('slot-3').innerText = Math.floor(Math.random() * 10);
+            }, 80);
+
+            setTimeout(async function() {
+                clearInterval(interval);
+                rollBtn.disabled = false;
+
+                const rollChance = Math.random() * 100; 
+                let finalWin = 0;
+                let message = "";
+
+                if (rollChance <= 15) {
+                    finalWin = bet * 3;
+                    document.getElementById('slot-1').innerText = "7";
+                    document.getElementById('slot-2').innerText = "7";
+                    document.getElementById('slot-3').innerText = "7";
+                    statusMsg.style.color = "#4edf7a";
+                    message = `👑 ДЖЕКПОТ! Ви зірвали Бобровий Куш! Виграш: +${finalWin.toFixed(2)} $ (Множник x3!)`;
+                } 
+                else if (rollChance > 15 && rollChance <= 60) {
+                    finalWin = bet * 2;
+                    let num = Math.floor(Math.random() * 6) + 1;
+                    document.getElementById('slot-1').innerText = num;
+                    document.getElementById('slot-2').innerText = num;
+                    document.getElementById('slot-3').innerText = Math.floor(Math.random() * 9);
+                    statusMsg.style.color = "#ffbf69";
+                    message = `🪵 Непогано! Бобри подвоїли вашу ставку. Виграш: +${finalWin.toFixed(2)} $ (Множник x2)`;
+                } 
+                else {
+                    finalWin = 0;
+                    document.getElementById('slot-1').innerText = "3";
+                    document.getElementById('slot-2').innerText = "0";
+                    document.getElementById('slot-3').innerText = "2";
+                    statusMsg.style.color = "#ff4d4d";
+                    message = "❌ Злив! Бобер-дилер забрав ваші бакси собі на греблю. Спробуйте ще раз!";
+                }
+
+                currentGlobalMoney += finalWin;
+                document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+                document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+                updateStatusText();
+
+                statusMsg.innerText = message;
+
+                await mySupabase
+                    .from('user_money')
+                    .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+
+            }, 1500);
+        }
+
+        async function clickBarberBober() {
+            if (isBarberProcessing) return;
+            currentBarberClicks++;
+            let left = requiredBarberClicks - currentBarberClicks;
+
+            if (left > 0) {
+                document.getElementById('clicks-left-display').innerText = `Залишилося зрізати: ${left}`;
+                document.getElementById('barber-status-message').innerText = "Стрижка йде на повну... ✂";
+                document.getElementById('barber-status-message').style.color = "#fff";
+            } else {
+                isBarberProcessing = true;
+                document.getElementById('clicks-left-display').innerText = "Залишилося зрізати: 0";
+                
+                const boberImg = document.getElementById('barber-bober-img');
+                boberImg.src = "cutted.png";
+                boberImg.classList.add('barber-success');
+
+                const reward = Math.floor(Math.random() * 6) + 4; 
+                currentGlobalMoney += reward;
+
+                document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+                document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+                updateStatusText();
+
+                document.getElementById('barber-status-message').innerHTML = `<span style="color:#4edf7a;">✔ Бобер задоволений! Він заплатив вам +${reward.toFixed(2)} $ і пішов флексити!</span>`;
+
+                await mySupabase
+                    .from('user_money')
+                    .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+
+                setTimeout(function() {
+                    generateNewBarberCustomer();
+                }, 1500);
+            }
+        }
+
+        function updateStatusText() {
+            const bomzhTextElement = document.querySelector('.bomzh-text');
+            if (!bomzhTextElement) return;
+            
+            if (currentGlobalDebt > 0) {
+                bomzhTextElement.innerText = "❌ ТИ У КРЕДИТНІЙ КАБАЛІ БОБРІВ! Працюй швидше!";
+                bomzhTextElement.style.color = "#ff4d4d";
+            } else if (currentGlobalMoney < 5.0) {
+                bomzhTextElement.innerText = "ех у тебе немає ні бакса який ж ти бомж";
+                bomzhTextElement.style.color = "#ff4d4d";
+            } else if (currentGlobalMoney >= 5.0 && currentGlobalMoney < 50.0) {
+                bomzhTextElement.innerText = "Ого, та ти вже солідний бобер! 🪵";
+                bomzhTextElement.style.color = "#ff9f1c";
+            } else {
+                bomzhTextElement.innerText = "Офіційно: ти Бобровий Магнат! 👑";
+                bomzhTextElement.style.color = "#4edf7a";
+            }
+        }
+
+        async function sendMoneyTransaction() {
+            const targetUser = document.getElementById('transfer-target').value.trim();
+            const amountStr = document.getElementById('transfer-amount').value.trim();
+            const statusMsg = document.getElementById('transfer-status-message');
+
+            statusMsg.innerText = "";
+            statusMsg.style.color = "#ff4d4d";
+
+            if (!targetUser || !amountStr) {
+                statusMsg.innerText = "Помилка: Заповни логін отримувача та суму!";
+                return;
+            }
+
+            const amount = parseFloat(amountStr);
+            if (isNaN(amount) || amount <= 0) {
+                statusMsg.innerText = "Помилка: Сума має бути більшою за нуль!";
+                return;
+            }
+
+            if (targetUser === currentGlobalUser) {
+                statusMsg.innerText = "Помилка: Не можна переказувати гроші самому собі!";
+                return;
+            }
+
+            if (currentGlobalMoney < amount) {
+                statusMsg.innerText = "Помилка: У вас недостатньо бобро-баксів для переказу!";
+                return;
+            }
+
+            document.getElementById('transfer-form').classList.add('hidden');
+            document.getElementById('transfer-loading').classList.remove('hidden');
+            
+            const randomTip = bobrTips[Math.floor(Math.random() * bobrTips.length)];
+            document.getElementById('transfer-tip-text').innerText = randomTip;
+
+            setTimeout(async function() {
+                try {
+                    const { data: targetData, error: targetError } = await mySupabase
+                        .from('user_money')
+                        .select('*')
+                        .eq('login', targetUser);
+
+                    if (targetError || !targetData || targetData.length === 0) {
+                        document.getElementById('transfer-form').classList.remove('hidden');
+                        document.getElementById('transfer-loading').classList.add('hidden');
+                        statusMsg.innerText = `Помилка: Користувача з логіном "${targetUser}" не існує!`;
+                        return;
+                    }
+
+                    let targetCurrentMoney = parseFloat(targetData[0].money);
+
+                    currentGlobalMoney -= amount;
+                    await mySupabase
+                        .from('user_money')
+                        .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+
+                    targetCurrentMoney += amount;
+                    await mySupabase
+                        .from('user_money')
+                        .upsert({ login: targetUser, money: targetCurrentMoney });
+
+                    document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+                    document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+                    updateStatusText();
+
+                    document.getElementById('transfer-form').classList.remove('hidden');
+                    document.getElementById('transfer-loading').classList.add('hidden');
+                    
+                    document.getElementById('transfer-target').value = "";
+                    document.getElementById('transfer-amount').value = "";
+
+                    statusMsg.style.color = "#4edf7a";
+                    statusMsg.innerText = `✔ Успішно переказано ${amount.toFixed(2)} $ для користувача ${targetUser}!`;
+
+                } catch (err) {
+                    document.getElementById('transfer-form').classList.remove('hidden');
+                    document.getElementById('transfer-loading').classList.add('hidden');
+                    statusMsg.innerText = "Критична помилка мережі: " + err.message;
+                }
+            }, 4000);
+        }
+
+        async function registerUser() {
+            const loginInput = document.getElementById('reg-login').value.trim();
+            const passInput = document.getElementById('reg-password').value.trim();
+
+            if (!loginInput || !passInput) {
+                alert("Заповни всі поля!");
+                return;
+            }
+
+            try {
+                const { error: regError } = await mySupabase
+                    .from('passcodes')
+                    .insert([{ login: loginInput, password: passInput }]);
+
+                if (regError) {
+                    alert("Помилка реєстрації: " + regError.message);
+                    return;
+                }
+
+                await mySupabase.from('user_money').insert([{ login: loginInput, money: 0 }]);
+                alert("Реєстрація успішна! Тепер увійдіть.");
+                toggleForms('login');
+            } catch (err) {
+                alert("Критична помилка: " + err.message);
+            }
+        }
+
+        async function loginUser() {
+            const loginIn = document.getElementById('login-username').value.trim();
+            const passIn = document.getElementById('login-password').value.trim();
+
+            if (!loginIn || !passIn) {
+                alert("Введіть логін та пароль!");
+                return;
+            }
+
+            try {
+                const { data, error } = await mySupabase
+                    .from('passcodes')
+                    .select('*')
+                    .eq('login', loginIn)
+                    .eq('password', passIn);
+
+                if (error) {
+                    alert("Помилка бази даних: " + error.message);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    alert("Вхід успішний!");
+                    currentGlobalUser = loginIn;
+
+                    document.body.classList.add('logged-in');
+                    document.getElementById('main-header').classList.add('logged-in-header');
+                    document.getElementById('header-title').innerText = "🦫 ЛОГІВО ПРЕЗЕДЕНТА БОБРІВ";
+                    document.getElementById('menu-trigger').classList.remove('hidden');
+
+                    await fetchUserMoney();
+                    document.getElementById('login-box').classList.add('hidden');
+                    showSection('balance-sec');
+                } else {
+                    alert("Неправильний логін або пароль!");
+                }
+            } catch (err) {
+                alert("Не вдалося підключитися: " + err.message);
+            }
+        }
+
+        async function fetchUserMoney() {
+            try {
+                const { data, error } = await mySupabase
+                    .from('user_money')
+                    .select('money')
+                    .eq('login', currentGlobalUser);
+
+                if (data && data.length > 0) {
+                    currentGlobalMoney = parseFloat(data[0].money);
+                } else {
+                    await mySupabase.from('user_money').insert([{ login: currentGlobalUser, money: 0 }]);
+                    currentGlobalMoney = 0.0;
+                }
+
+                document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+                document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+                
+                // Якщо при вході виявиться, що баланс мінусовий через старі борги
+                if(currentGlobalMoney < 0) {
+                    currentGlobalDebt = Math.abs(currentGlobalMoney);
+                    document.getElementById('debt-alert-box').classList.remove('hidden');
+                    document.getElementById('current-debt-display').innerText = currentGlobalDebt.toFixed(2);
+                    startCreditSystem();
+                }
+                
+                updateStatusText();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function clickBeaver() {
+            currentGlobalMoney += 0.10;
+            
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+            updateStatusText();
+
+            await mySupabase
+                .from('user_money')
+                .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+        }
+
+        async function buyProduct(name, price, btnId) {
+            if (currentGlobalMoney < price) {
+                document.getElementById('shop-status-message').innerText = "У вас недостатньо бобро-баксів!";
+                return;
+            }
+
+            selectedProduct = name;
+            selectedPrice = price;
+            currentBtnId = btnId;
+
+            const shopContainer = document.getElementById('shop-items-container');
+            shopContainer.classList.remove('bass-mode');
+            shopContainer.classList.add('hidden');
+            
+            setMusicState(false);
+            stopFlyingWords();
+
+            document.getElementById('shop-loading').classList.remove('hidden');
+            document.getElementById('shop-status-message').innerText = "";
+
+            setTimeout(async function() {
+                currentGlobalMoney -= selectedPrice;
+                
+                document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+                document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+                updateStatusText();
+
+                await mySupabase
+                    .from('user_money')
+                    .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+
+                document.getElementById('shop-loading').classList.add('hidden');
+                document.getElementById('shop-delivery').classList.remove('hidden');
+                document.getElementById('delivery-item-name').innerText = selectedProduct;
+            }, 6000);
+        }
+
+        function confirmDelivery() {
+            const method = document.getElementById('delivery-method').value;
+            const dest = document.getElementById('delivery-destination').value;
+
+            document.getElementById('shop-delivery').classList.add('hidden');
+            purchasedItems.push(currentBtnId);
+
+            document.getElementById('shop-status-message').innerHTML = `
+                <span style="color: #4edf7a;">✔ Успішно списано ${selectedPrice.toFixed(2)} $!</span><br><br>
+                Ваше замовлення [<b>${selectedProduct}</b>] прийнято!<br>
+                Спосіб видачі: <b>${method}</b><br>
+                Пункт призначення: <b>${dest}</b><br><br>
+                <span style="color: #ff4d4d; font-size: 1.2rem;">⚠ Помилка логістики: Всі бобри-кур'єри зараз зайняті поїданням дерев. Ваша доставка затримується приблизно на 50 років! 🦫🪵</span>
+            `;
+        }
+
+        function startLoading() {
+            document.getElementById('buy-btn').classList.add('hidden');
+            document.getElementById('loading-section').classList.remove('hidden');
+            document.getElementById('status-message').innerText = "";
+
+            setTimeout(function() {
+                document.getElementById('loading-section').classList.add('hidden');
+                document.getElementById('status-message').innerText = "Всі картки вже ізрасходувалися! 🦫 Почекайте до наступного завозу бобрів.";
+            }, 10000);
         }
     </script>
 </body>
