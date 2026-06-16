@@ -320,8 +320,8 @@
             <li onclick="showSection('credit-sec')">🚨 Бобровий Кредит</li>
             <li onclick="showSection('crypto-sec')">📈 Боброва Біржа</li>
             <li id="menu-passport-item" class="hidden" onclick="showSection('passport-sec')">🪪 Паспорт Бобра</li>
+            <li onclick="showSection('chat-sec')">💬 Бобро-Чат</li>
         </ul>
-    </div>
 
     <div id="register-box" class="container">
         <h2>Реєстрація у Бобер-Банку</h2>
@@ -567,6 +567,14 @@
             <div class="passport-field"><span class="passport-label">Крипто-інвестор:</span> <span id="pass-crypto" style="color:#ffbf69;">—</span></div>
             <div class="passport-field"><span class="passport-label">Боброва репутація:</span> <span id="pass-rep">—</span></div>
         </div>
+    </div>
+    <div id="chat-sec" class="container hidden bank-section">
+        <h2>💬 Бобро-Чат</h2>
+        <div id="chat-window" class="chat-window"></div>
+        <input type="text" id="chat-input" placeholder="Напиши щось...">
+        <input type="file" id="chat-file" accept="image/*" style="display:none;">
+        <label for="chat-file" class="chat-file-label">📎 Фото</label>
+        <button onclick="sendMessage()">Надіслати</button>
     </div>
 
     <script>
