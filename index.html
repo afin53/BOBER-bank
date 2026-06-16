@@ -424,6 +424,46 @@
             font-size: 0.95rem;
             color: #eee;
         }
+
+        /* ==================== МОБІЛЬНА ВЕРСІЯ ==================== */
+        @media (max-width: 480px) {
+            .container {
+                width: 95% !important;
+                padding: 15px !important;
+                margin: 10px 0 !important;
+            }
+
+            header h1 {
+                font-size: 1.8rem !important;
+            }
+
+            .bank-image, .barber-image {
+                max-width: 180px !important;
+            }
+
+            .slot-box {
+                width: 50px !important;
+                height: 50px !important;
+                font-size: 1.8rem !important;
+            }
+
+            #chat-messages-box, #announce-messages-box {
+                height: 220px !important;
+            }
+
+            .sidebar {
+                width: 200px !important;
+            }
+
+            button {
+                padding: 14px !important;
+                font-size: 1rem !important;
+            }
+
+            input, select {
+                padding: 12px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -729,6 +769,7 @@
         let chatSubscription = null;
         let chatLoaded = false;
         let chatSoundEnabled = true;
+        let chatPollInterval = null;   // для polling кожні 3 секунди
 
         // ОГОЛОШЕННЯ: стан
         let announceSubscription = null;
@@ -1104,6 +1145,12 @@
         function showSection(sectionId) {
             const sections = document.querySelectorAll('.bank-section');
             sections.forEach(sec => sec.classList.add('hidden'));
+
+            // Зупиняємо polling чату, якщо відкриваємо інший розділ
+            if (chatPollInterval && sectionId !== 'chat-sec') {
+                clearInterval(chatPollInterval);
+                chatPollInterval = null;
+            }
             
             const targetSection = document.getElementById(sectionId);
             targetSection.classList.remove('hidden');
@@ -1123,6 +1170,13 @@
                     loadChatMessages();
                     chatLoaded = true;
                 }
+
+                // Запускаємо polling кожні 3 секунди (як просив)
+                if (chatPollInterval) clearInterval(chatPollInterval);
+                chatPollInterval = setInterval(() => {
+                    loadChatMessages();
+                }, 3000);
+
                 setMusicState(false);
                 stopFlyingWords();
                 shopContainer.classList.remove('bass-mode');
