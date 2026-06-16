@@ -742,6 +742,12 @@
             <button onclick="takeBoberCredit(50.00)">Взяти 50$ в борг</button>
         </div>
 
+        <div class="credit-card">
+            <h3>Щастя депера</h3>
+            <p>Сума: <span style="color:#4edf7a; font-weight:bold;">1000.00 $</span></p>
+            <button onclick="takeBoberCredit(1000.00)">Взяти 1000$ в борг</button>
+        </div>
+        
         <div id="credit-status-message"></div>
     </div>
 
@@ -790,12 +796,12 @@
     <!-- 📈 БІРЖА -->
     <div id="stock-sec" class="container hidden bank-section">
         <h2>📈 Боброва Біржа</h2>
-        <p>Купуй та продавай акції. Ціни змінюються з часом!</p>
+        <p>Купуй та продавай акції.</p>
 
         <div id="stock-list" style="margin-top: 15px;"></div>
 
         <div style="margin-top: 20px; font-size: 0.9rem; color: #777;">
-            Ціни оновлюються кожні 10 секунд
+            Ціни оновлюються кожну 1 секунду вроде
         </div>
     </div>
 
@@ -932,7 +938,7 @@
         let announceSubscription = null;
         let announceLoaded = false;
 
-        const bobrPhrases = ["боброво!", "дешево!", "БОБРА!", "Купляй не пошкодиеш", "ОФІЦІЙНО", "500_строчок_кода"];
+        const bobrPhrases = ["боброво!", "дешево!", "БОБРА!", "Купляй не пошкодиеш", "ОФІЦІЙНО", "2000_строчок_кода"];
         const bobrTips = [
             "Не довіряйте свій пароль бобрам з сусіднього лісу!",
             "Якщо клікати швидше, то солідним бобром можна стати за 5 хвилин.",
@@ -2133,7 +2139,7 @@
             Object.keys(stocks).forEach(symbol => {
                 const stock = stocks[symbol];
                 const change = (Math.random() - 0.5) * 8; // ±4$
-                stock.price = Math.max(10, stock.price + change);
+                stock.price = Math.max(1, stock.price + change);
             });
             renderStocks();
         }
