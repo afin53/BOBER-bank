@@ -582,6 +582,37 @@
         const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
         const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+
+
+
+        // Функція надсилання
+async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value;
+    // Оскільки в базі в тебе поле називається "login", а не "user"
+    await mySupabase.from('bober_chat').insert([{ 
+        login: currentGlobalUser, 
+        message: text 
+    }]);
+    input.value = '';
+    loadChat();
+}
+
+// Функція завантаження
+async function loadChat() {
+    const { data } = await mySupabase.from('bober_chat')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+    
+    document.getElementById('chat-window').innerHTML = data.reverse().map(m => `
+        <div class="chat-message">
+            <b>${m.login}:</b> ${m.message}
+        </div>
+    `).join('');
+}
+
+        
         let currentGlobalUser = "";
         let currentGlobalMoney = 0.0;
         let currentGlobalDebt = 0.0;
@@ -668,45 +699,49 @@
         }
 
         function showSection(sectionId) {
-            const sections = document.querySelectorAll('.bank-section');
-            sections.forEach(sec => sec.classList.add('hidden'));
-            
-            document.getElementById(sectionId).classList.remove('hidden');
-            const shopContainer = document.getElementById('shop-items-container');
-            
-            document.getElementById('transfer-status-message').innerText = "";
-            document.getElementById('casino-status-message').innerText = "";
-            document.getElementById('credit-status-message').innerText = "";
-            document.getElementById('crypto-status-message').innerText = "";
+    const sections = document.querySelectorAll('.bank-section');
+    sections.forEach(sec => sec.classList.add('hidden'));
+    
+    document.getElementById(sectionId).classList.remove('hidden');
+    const shopContainer = document.getElementById('shop-items-container');
+    
+    document.getElementById('transfer-status-message').innerText = "";
+    document.getElementById('casino-status-message').innerText = "";
+    document.getElementById('credit-status-message').innerText = "";
+    document.getElementById('crypto-status-message').innerText = "";
 
-            if (sectionId === 'barber-sec') generateNewBarberCustomer();
-            if (sectionId === 'leaderboard-sec') loadLeaderboard();
-            if (sectionId === 'passport-sec') updatePassportUI();
+    // Спеціальні виклики для секцій
+    if (sectionId === 'barber-sec') generateNewBarberCustomer();
+    if (sectionId === 'leaderboard-sec') loadLeaderboard();
+    if (sectionId === 'passport-sec') updatePassportUI();
+    
+    // ДОДАНИЙ РЯДОК ДЛЯ ЧАТУ:
+    if (sectionId === 'chat-sec') loadChat();
 
-            if(sectionId === 'shop-sec') {
-                setMusicState(true); 
-                shopContainer.classList.add('bass-mode');
-                startFlyingWords();
-                shopContainer.classList.remove('hidden');
-                document.getElementById('shop-loading').classList.add('hidden');
-                document.getElementById('shop-delivery').classList.add('hidden');
-                document.getElementById('shop-status-message').innerText = "";
-                
-                purchasedItems.forEach(id => {
-                    const btn = document.getElementById(id);
-                    if(btn) { btn.innerText = "У доставці..."; btn.disabled = true; }
-                });
-            } else if (sectionId === 'casino-sec') {
-                updateMusicButtons();
-                shopContainer.classList.remove('bass-mode');
-                stopFlyingWords();
-            } else {
-                setMusicState(false);
-                shopContainer.classList.remove('bass-mode');
-                stopFlyingWords();
-            }
-            toggleSidebar(false);
-        }
+    if(sectionId === 'shop-sec') {
+        setMusicState(true); 
+        shopContainer.classList.add('bass-mode');
+        startFlyingWords();
+        shopContainer.classList.remove('hidden');
+        document.getElementById('shop-loading').classList.add('hidden');
+        document.getElementById('shop-delivery').classList.add('hidden');
+        document.getElementById('shop-status-message').innerText = "";
+        
+        purchasedItems.forEach(id => {
+            const btn = document.getElementById(id);
+            if(btn) { btn.innerText = "У доставці..."; btn.disabled = true; }
+        });
+    } else if (sectionId === 'casino-sec') {
+        updateMusicButtons();
+        shopContainer.classList.remove('bass-mode');
+        stopFlyingWords();
+    } else {
+        setMusicState(false);
+        shopContainer.classList.remove('bass-mode');
+        stopFlyingWords();
+    }
+    toggleSidebar(false);
+}
 
         // 📈 ЛОГІКА БОБРОВОЇ БІРЖІ (КРИПТА)
         function startCryptoMarket() {
