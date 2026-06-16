@@ -492,6 +492,7 @@
             <li onclick="showSection('credit-sec')">🚨 Бобровий Кредит</li>
             <li onclick="showSection('chat-sec')">💬 Бобро-Чат</li>
             <li onclick="showSection('announce-sec')">📢 Оголошення</li>
+            <li onclick="showSection('tips-sec')">💡 Поради</li>
         </ul>
     </div>
 
@@ -745,6 +746,36 @@
         <div id="chat-status"></div>
     </div>
 
+    <!-- 💡 ПОРАДИ -->
+    <div id="tips-sec" class="container hidden bank-section">
+        <h2>💡 Поради Бобра</h2>
+        <p>Корисні поради кожні 7 секунд</p>
+        
+        <div id="tip-display" style="background:#15151a; border:2px solid #ff9f1c; border-radius:10px; padding:20px; margin:20px 0; min-height:120px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; cursor:pointer;" onclick="tipClicked()">
+            Завантаження поради...
+        </div>
+        
+        <div style="font-size:0.85rem; color:#777;">
+            Натискай на пораду, якщо вона здається підозрілою...
+        </div>
+    </div>
+
+    <!-- 🕶️ ЧОРНИЙ РИНОК -->
+    <div id="black-market-sec" class="container hidden bank-section">
+        <h2 style="color:#ff4d4d;">🕶️ Чорний ринок Бобра</h2>
+        <p style="color:#ffbf69;">Тут продають... підозрілі поради.</p>
+
+        <div style="background:#1a1a20; border:2px solid #ff4d4d; border-radius:10px; padding:20px; margin:20px 0;">
+            <h3>Порада для "ВZл0ма"</h3>
+            <p style="font-size:0.95rem; color:#ff9f1c;">Ціна: <b>10 000 000 $</b></p>
+            <button onclick="buyBlackMarketTip()" style="background:#ff4d4d; width:100%;">Купити підозрілу пораду</button>
+        </div>
+
+        <div style="font-size:0.8rem; color:#777; margin-top:15px;">
+            ⚠️ Покупка на свій страх і ризик...
+        </div>
+    </div>
+
     <!-- 👕 БОБРО СТИЛЬ -->
     <div id="bobr-style-sec" class="container hidden bank-section">
         <h2>👕 Бобро Стиль</h2>
@@ -834,6 +865,20 @@
         // Секретна адмін-панель
         let adminClickCount = 0;
         const ADMIN_PASSWORD = "bobriki25";
+
+        // === ПОРАДИ ТА ЧОРНИЙ РИНОК ===
+        let tipsInterval = null;
+        let specialTipClicks = 0;
+        let blackMarketUnlocked = false;
+
+        const normalTips = [
+            "Не довіряй паролі бобрам з сусіднього лісу!",
+            "Чим швидше клікаєш — тим швидше стаєш багатим.",
+            "Бобровий Квас підвищує ефективність праці на 300%.",
+            "Куплений сарай захищає від податків (іноді).",
+            "Найкращий спосіб вийти з бомжів — затиснути ліву кнопку миші.",
+            "Бобер-Банк ніколи не бере комісію... майже ніколи."
+        ];
 
         // ОГОЛОШЕННЯ: стан
         let announceSubscription = null;
@@ -1240,6 +1285,10 @@
                 clearInterval(chatPollInterval);
                 chatPollInterval = null;
             }
+            if (tipsInterval && sectionId !== 'tips-sec') {
+                clearInterval(tipsInterval);
+                tipsInterval = null;
+            }
             
             const targetSection = document.getElementById(sectionId);
             targetSection.classList.remove('hidden');
@@ -1279,6 +1328,10 @@
                 setMusicState(false);
                 stopFlyingWords();
                 shopContainer.classList.remove('bass-mode');
+            } else if (sectionId === 'tips-sec') {
+                updateTip();
+                if (tipsInterval) clearInterval(tipsInterval);
+                tipsInterval = setInterval(updateTip, 7000);
             } else if(sectionId === 'shop-sec') {
                 setMusicState(true); 
                 shopContainer.classList.add('bass-mode');
@@ -1904,6 +1957,91 @@
         function resetAccessories() {
             equippedAccessories = [];
             updateCustomBeaver();
+        }
+
+        // ==================== ПОРАДИ ====================
+        function updateTip() {
+            const display = document.getElementById('tip-display');
+            if (!display) return;
+
+            const rand = Math.random();
+
+            if (rand < 0.6 && !blackMarketUnlocked) {
+                // 60% шанс показати спеціальну пораду про Чорний ринок
+                display.innerHTML = `А ви знали, що щоб відкрити <b>Чорний ринок</b> потрібно <b>3 рази натиснути</b> на цю пораду?`;
+                display.style.borderColor = '#ff4d4d';
+                display.style.color = '#ffbf69';
+                display.dataset.isSpecial = 'true';
+            } else {
+                const tip = normalTips[Math.floor(Math.random() * normalTips.length)];
+                display.innerHTML = tip;
+                display.style.borderColor = '#ff9f1c';
+                display.style.color = '#eee';
+                display.dataset.isSpecial = 'false';
+            }
+        }
+
+        function tipClicked() {
+            const display = document.getElementById('tip-display');
+            if (!display || display.dataset.isSpecial !== 'true') return;
+
+            specialTipClicks++;
+
+            if (specialTipClicks >= 3 && !blackMarketUnlocked) {
+                blackMarketUnlocked = true;
+                addBlackMarketToMenu();
+                display.innerHTML = `✅ <b>Чорний ринок розблоковано!</b><br>Тепер він з'явився в меню.`;
+                display.style.borderColor = '#4edf7a';
+                display.style.cursor = 'default';
+                
+                setTimeout(() => {
+                    alert('Чорний ринок розблоковано! Шукай його в меню.');
+                }, 800);
+            } else if (specialTipClicks < 3) {
+                display.innerHTML = `Натисни ще <b>${3 - specialTipClicks}</b> раз(и)...`;
+            }
+        }
+
+        function addBlackMarketToMenu() {
+            const sidebar = document.querySelector('#sidebar ul');
+            if (!sidebar || document.getElementById('menu-black-market')) return;
+
+            const li = document.createElement('li');
+            li.id = 'menu-black-market';
+            li.innerHTML = '🕶️ Чорний ринок';
+            li.onclick = () => showSection('black-market-sec');
+            sidebar.appendChild(li);
+        }
+
+        function buyBlackMarketTip() {
+            const price = 10000000;
+
+            if (currentGlobalMoney < price) {
+                alert('Недостатньо грошей на Чорному ринку!');
+                return;
+            }
+
+            currentGlobalMoney -= price;
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+
+            alert('Порада куплена... Обробка...');
+
+            // Через 5 секунд — тролінг з Бобровою поліцією
+            setTimeout(() => {
+                const police = document.createElement('div');
+                police.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; display:flex; align-items:center; justify-content:center; flex-direction:column; color:white;';
+                police.innerHTML = `
+                    <div style="font-size:4rem; margin-bottom:20px;">🦫🚨</div>
+                    <h2 style="color:#ff4d4d;">Боброва Поліція</h2>
+                    <p style="max-width:400px; text-align:center; font-size:1.1rem;">
+                        Користувач <b>${currentGlobalUser}</b> підозрюється в хакінгу Бобер-Банку.<br><br>
+                        Ваші дії зафіксовано. Готуйтеся до перевірки...
+                    </p>
+                    <button onclick="this.parentElement.remove()" style="margin-top:30px; padding:12px 30px; background:#ff4d4d;">Зрозуміло...</button>
+                `;
+                document.body.appendChild(police);
+            }, 5000);
         }
 
         function startLoading() {
