@@ -623,6 +623,25 @@
                 <p class="price-tag" style="color:#4edf7a;">2 000 000 $</p>
                 <button id="btn-bobr-style" onclick="buyBoberStyleCategory()" style="background-color:#4edf7a; color:#1e1e24;">Купити Бобро Стиль</button>
             </div>
+
+            <!-- ДОДАТКОВІ ПРЕДМЕТИ -->
+            <div class="shop-item">
+                <h3>Боброва Ферма</h3>
+                <p class="price-tag">75.00 $</p>
+                <button onclick="buyProduct('Боброва Ферма', 75, 'btn-ferma')">Купити Ферму</button>
+            </div>
+
+            <div class="shop-item">
+                <h3>Золота Лопата</h3>
+                <p class="price-tag">120.00 $</p>
+                <button onclick="buyProduct('Золота Лопата', 120, 'btn-lopata')">Купити Лопату</button>
+            </div>
+
+            <div class="shop-item">
+                <h3>Бобровий Енергетик</h3>
+                <p class="price-tag">25.00 $</p>
+                <button onclick="buyProduct('Бобровий Енергетик', 25, 'btn-energy')">Купити Енергетик</button>
+            </div>
         </div>
 
         <div id="shop-loading" class="hidden">
@@ -742,12 +761,19 @@
             <button onclick="takeBoberCredit(50.00)">Взяти 50$ в борг</button>
         </div>
 
-        <div class="credit-card">
-            <h3>Щастя депера</h3>
-            <p>Сума: <span style="color:#4edf7a; font-weight:bold;">1000.00 $</span></p>
-            <button onclick="takeBoberCredit(1000.00)">Взяти 1000$ в борг</button>
+        <!-- Нові кредити -->
+        <div class="credit-card" style="border-color: #ffbf69;">
+            <h3>Щастя Депера</h3>
+            <p>Сума: <span style="color:#4edf7a; font-weight:bold;">1 000.00 $</span></p>
+            <button onclick="takeBoberCredit(1000)">Взяти 1000$ в борг</button>
         </div>
-        
+
+        <div class="credit-card" style="border-color: #ff4d4d;">
+            <h3>Ризикований Старт</h3>
+            <p>Сума: <span style="color:#4edf7a; font-weight:bold;">1 000 000.00 $</span></p>
+            <button onclick="takeBoberCredit(1000000)">Взяти 1 000 000$ в борг</button>
+        </div>
+
         <div id="credit-status-message"></div>
     </div>
 
@@ -796,12 +822,12 @@
     <!-- 📈 БІРЖА -->
     <div id="stock-sec" class="container hidden bank-section">
         <h2>📈 Боброва Біржа</h2>
-        <p>Купуй та продавай акції.</p>
+        <p>Купуй та продавай акції. Ціни змінюються з часом!</p>
 
         <div id="stock-list" style="margin-top: 15px;"></div>
 
         <div style="margin-top: 20px; font-size: 0.9rem; color: #777;">
-            Ціни оновлюються кожну 1 секунду вроде
+            Ціни оновлюються кожні 10 секунд
         </div>
     </div>
 
@@ -938,7 +964,7 @@
         let announceSubscription = null;
         let announceLoaded = false;
 
-        const bobrPhrases = ["боброво!", "дешево!", "БОБРА!", "Купляй не пошкодиеш", "ОФІЦІЙНО", "2000_строчок_кода"];
+        const bobrPhrases = ["боброво!", "дешево!", "БОБРА!", "Купляй не пошкодиеш", "ОФІЦІЙНО", "500_строчок_кода"];
         const bobrTips = [
             "Не довіряйте свій пароль бобрам з сусіднього лісу!",
             "Якщо клікати швидше, то солідним бобром можна стати за 5 хвилин.",
@@ -1496,13 +1522,17 @@
             startCreditSystem();
         }
 
+        let debtStartTime = null;
+
         function startCreditSystem() {
             if (creditIntervalId) clearInterval(creditIntervalId);
+            debtStartTime = Date.now();
 
             creditIntervalId = setInterval(async function() {
                 if (currentGlobalDebt <= 0) {
                     clearInterval(creditIntervalId);
                     document.getElementById('debt-alert-box').classList.add('hidden');
+                    debtStartTime = null;
                     return;
                 }
 
@@ -1519,9 +1549,17 @@
                 document.getElementById('current-debt-display').innerText = currentGlobalDebt.toFixed(2);
                 updateStatusText();
 
+                // === БОБРОВА ПОЛІЦІЯ при довгому боргу ===
+                if (debtStartTime && (Date.now() - debtStartTime > 60000)) {
+                    clearInterval(creditIntervalId);
+                    showPoliceWarning();
+                    return;
+                }
+
                 if (currentGlobalDebt <= 0) {
                     clearInterval(creditIntervalId);
                     document.getElementById('debt-alert-box').classList.add('hidden');
+                    debtStartTime = null;
                     alert("🎉 Вітаємо! Ви повністю виплатили бобровий кредит!");
                 }
 
@@ -1530,6 +1568,29 @@
                     .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
 
             }, 10000);
+        }
+
+        function showPoliceWarning() {
+            const police = document.createElement('div');
+            police.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:999999; display:flex; align-items:center; justify-content:center; flex-direction:column; color:white;';
+            police.innerHTML = `
+                <div style="font-size:5rem; margin-bottom:20px;">🦫🚨</div>
+                <h1 style="color:#ff4d4d; margin-bottom:10px;">Боброва Поліція</h1>
+                <p style="max-width:420px; text-align:center; font-size:1.15rem; line-height:1.4;">
+                    Ви не повернули борг протягом хвилини.<br><br>
+                    Ваш акаунт <b>${currentGlobalUser}</b> буде видалено назавжди.
+                </p>
+                <button onclick="deleteAccountForever()" style="margin-top:30px; padding:14px 40px; background:#ff4d4d; font-size:1.1rem;">
+                    Зрозуміло...
+                </button>
+            `;
+            document.body.appendChild(police);
+        }
+
+        function deleteAccountForever() {
+            localStorage.clear();
+            alert("Ваш акаунт видалено назавжди.\nДякуємо за гру.");
+            location.reload();
         }
 
         // ЛОГІКА КАЗІКА БОБРА
@@ -2022,12 +2083,45 @@
         }
 
         // ==================== 3D TILT ЕФЕКТ ====================
+        let lastTiltSoundTime = 0;
+
+        function playButtonTiltSound() {
+            const now = Date.now();
+            if (now - lastTiltSoundTime < 80) return;
+            lastTiltSoundTime = now;
+
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.value = 1250; // високий "тік"
+
+                gain.gain.value = 0.12;
+
+                const nowTime = audioCtx.currentTime;
+                gain.gain.setValueAtTime(0.12, nowTime);
+                gain.gain.linearRampToValueAtTime(0.001, nowTime + 0.06);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(nowTime);
+                osc.stop(nowTime + 0.07);
+            } catch (e) {}
+        }
+
         function init3DTilt() {
-            // Застосовуємо tilt тільки на важливі кнопки та картки магазину
-            const tiltElements = document.querySelectorAll('button, .shop-item');
+            const tiltElements = document.querySelectorAll('button, .shop-item, #sidebar ul li');
 
             tiltElements.forEach(el => {
                 el.classList.add('tilt');
+
+                el.addEventListener('mouseenter', () => {
+                    // Звук тільки при першому наведенні на кнопку
+                    playButtonTiltSound();
+                });
 
                 el.addEventListener('mousemove', (e) => {
                     const rect = el.getBoundingClientRect();
@@ -2139,7 +2233,7 @@
             Object.keys(stocks).forEach(symbol => {
                 const stock = stocks[symbol];
                 const change = (Math.random() - 0.5) * 8; // ±4$
-                stock.price = Math.max(1, stock.price + change);
+                stock.price = Math.max(10, stock.price + change);
             });
             renderStocks();
         }
