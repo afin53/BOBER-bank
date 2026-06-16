@@ -480,6 +480,15 @@
         </div>
 
         <div class="bomzh-text">ех у тебе немає ні бакса який ж ти бомж</div>
+
+        <!-- Щоденний бонус -->
+        <div style="margin-top: 20px; padding: 15px; background-color: #2a2a35; border-radius: 10px; border: 2px solid #ff9f1c;">
+            <h3 style="margin: 0 0 10px 0; color: #ff9f1c;">🎁 Щоденний бонус бобра</h3>
+            <button onclick="claimDailyBonus()" style="background-color: #4edf7a; color: #1e1e24; font-weight: bold;">
+                Отримати бонус
+            </button>
+            <div id="daily-bonus-status" style="margin-top: 10px; font-size: 0.95rem; color: #ffbf69;"></div>
+        </div>
     </div>
 
     <div id="card-sec" class="container hidden bank-section">
@@ -669,6 +678,13 @@
             <span class="chat-empty-msg">Завантаження повідомлень... 🦫</span>
         </div>
 
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div style="font-size:0.85rem; color:#777;">🦫 Бобро-чат у реальному часі</div>
+            <button onclick="toggleChatSound()" style="width:auto; padding:4px 12px; font-size:0.8rem; background:#3f3f50; border:1px solid #ff9f1c;">
+                <span id="chat-sound-icon">🔊</span> <span id="chat-sound-text">Звук</span>
+            </button>
+        </div>
+
         <div class="chat-input-row">
             <input type="text" id="chat-input" placeholder="Написати бобрам..." maxlength="200" onkeydown="if(event.key==='Enter') sendChatMessage()">
             <button class="chat-send-btn" onclick="sendChatMessage()">📤</button>
@@ -712,6 +728,7 @@
         // ЧАТ: стан
         let chatSubscription = null;
         let chatLoaded = false;
+        let chatSoundEnabled = true;
 
         // ОГОЛОШЕННЯ: стан
         let announceSubscription = null;
@@ -814,7 +831,14 @@
                     'postgres_changes',
                     { event: 'INSERT', schema: 'public', table: 'chat_messages' },
                     (payload) => {
-                        renderChatMessage(payload.new);
+                        const newMsg = payload.new;
+
+                        // Граємо звук тільки якщо повідомлення не від нас самих
+                        if (newMsg.login !== currentGlobalUser) {
+                            playChatNotificationSound();
+                        }
+
+                        renderChatMessage(newMsg);
                     }
                 )
                 .subscribe();
@@ -849,6 +873,56 @@
             } finally {
                 input.disabled = false;
                 input.focus();
+            }
+        }
+
+        // 🎵 Функція звуку при новому повідомленні (прикольний бобровий звук)
+        function playChatNotificationSound() {
+            if (!chatSoundEnabled) return;
+
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter();
+
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.value = 420; // приємний тон
+
+                filter.type = 'lowpass';
+                filter.frequency.value = 1200;
+
+                gain.gain.value = 0.25;
+
+                // Envelope для короткого "тук-тук" звуку
+                const now = audioCtx.currentTime;
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.linearRampToValueAtTime(0.001, now + 0.28);
+
+                oscillator.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                oscillator.start(now);
+                oscillator.stop(now + 0.3);
+            } catch (e) {
+                // Якщо браузер не підтримує — тихо ігноруємо
+            }
+        }
+
+        function toggleChatSound() {
+            chatSoundEnabled = !chatSoundEnabled;
+            localStorage.setItem('chatSoundEnabled', chatSoundEnabled);
+
+            const icon = document.getElementById('chat-sound-icon');
+            const text = document.getElementById('chat-sound-text');
+
+            if (chatSoundEnabled) {
+                icon.innerText = '🔊';
+                text.innerText = 'Звук';
+            } else {
+                icon.innerText = '🔇';
+                text.innerText = 'Без звуку';
             }
         }
 
@@ -1041,12 +1115,13 @@
 
             if (sectionId === 'barber-sec') generateNewBarberCustomer();
             if (sectionId === 'leaderboard-sec') loadLeaderboard();
+            if (sectionId === 'balance-sec') updateDailyBonusStatus();
 
             // Ініціалізація чату при першому відкритті
             if (sectionId === 'chat-sec') {
                 if (!chatLoaded) {
                     loadChatMessages();
-                    subscribeChatRealtime();
+                    chatLoaded = true;
                 }
                 setMusicState(false);
                 stopFlyingWords();
@@ -1320,6 +1395,72 @@
             }
         }
 
+        // 🎁 ЩОДЕННИЙ БОНУС (додано для тебе)
+        function claimDailyBonus() {
+            const statusEl = document.getElementById('daily-bonus-status');
+            const now = Date.now();
+            const lastClaim = localStorage.getItem('lastDailyBonus');
+
+            if (lastClaim) {
+                const timePassed = now - parseInt(lastClaim);
+                const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - timePassed) / (1000 * 60 * 60));
+
+                if (timePassed < 24 * 60 * 60 * 1000) {
+                    statusEl.innerHTML = `⏳ Наступний бонус через <b>${hoursLeft} год</b>`;
+                    statusEl.style.color = '#ff9f1c';
+                    return;
+                }
+            }
+
+            // Даємо випадковий бонус від 5 до 20 баксів
+            const bonus = Math.floor(Math.random() * 16) + 5; 
+            currentGlobalMoney += bonus;
+
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+            updateStatusText();
+
+            // Зберігаємо в Supabase
+            mySupabase.from('user_money').upsert({ 
+                login: currentGlobalUser, 
+                money: currentGlobalMoney 
+            });
+
+            // Зберігаємо час останнього отримання
+            localStorage.setItem('lastDailyBonus', now.toString());
+
+            statusEl.innerHTML = `✅ Отримано <b>+${bonus} $</b>! Молодець, бобер!`;
+            statusEl.style.color = '#4edf7a';
+
+            // Через 3 секунди показуємо, коли наступний
+            setTimeout(() => {
+                statusEl.innerHTML = `Наступний бонус — завтра`;
+            }, 3000);
+        }
+
+        // Оновлюємо статус бонусу при відкритті балансу
+        function updateDailyBonusStatus() {
+            const statusEl = document.getElementById('daily-bonus-status');
+            if (!statusEl) return;
+
+            const lastClaim = localStorage.getItem('lastDailyBonus');
+            if (!lastClaim) {
+                statusEl.innerHTML = `🎁 Бонус доступний!`;
+                statusEl.style.color = '#4edf7a';
+                return;
+            }
+
+            const timePassed = Date.now() - parseInt(lastClaim);
+            if (timePassed >= 24 * 60 * 60 * 1000) {
+                statusEl.innerHTML = `🎁 Бонус доступний!`;
+                statusEl.style.color = '#4edf7a';
+            } else {
+                const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - timePassed) / (1000 * 60 * 60));
+                statusEl.innerHTML = `⏳ Наступний бонус через <b>${hoursLeft} год</b>`;
+                statusEl.style.color = '#ff9f1c';
+            }
+        }
+
         async function sendMoneyTransaction() {
             const targetUser = document.getElementById('transfer-target').value.trim();
             const amountStr = document.getElementById('transfer-amount').value.trim();
@@ -1419,6 +1560,16 @@
                     document.getElementById('menu-trigger').classList.remove('hidden');
 
                     await fetchUserMoney();
+
+                    // Запускаємо глобальний чат одразу після входу (щоб повідомлення приходили всім)
+                    subscribeChatRealtime();
+
+                    // Завантажуємо налаштування звуку чату
+                    const savedSound = localStorage.getItem('chatSoundEnabled');
+                    if (savedSound !== null) {
+                        chatSoundEnabled = savedSound === 'true';
+                    }
+
                     document.getElementById('login-box').classList.add('hidden');
                     showSection('balance-sec');
                 } else {
