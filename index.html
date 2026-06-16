@@ -980,12 +980,12 @@
     </div>
 
 // ==========================================================================
-// 14. ЯДРО СКРИПТІВ ТА ЛОГІКИ (JAVASCRIPT ENGINE) - ОНОВЛЕНО НА HEARTBEAT
+// 14. ЯДРО СКРИПТІВ ТА ЛОГІКИ (JAVASCRIPT ENGINE) - КЛАСИЧНА СИНХРОНІЗАЦІЯ
 // ==========================================================================
 const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
 const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
 
-// Виправлено назву змінної, щоб не було SyntaxError
+// Виправлено назву змінної клієнта
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let userLogin = "Гість";
@@ -1016,74 +1016,68 @@ function initAppSession() {
         if(e.key === 'Enter') sendChatMessage();
     });
 
-    // Миттєво прибираємо заставку завантаження!
-    renderApplicationUI({ owned_items: "Синхронізація...", has_passport: false });
-    closeLoadingScreen();
-
-    // Запуск фонових процесів
-    firstTimeCloudFetch();      
-    startCloudSyncIntervals();  
-    startInternalClockCycles(); 
-    fetchChatHistory();         
-    establishRealtimeWebsockets();
+    // Запускаємо синхронізацію при старті
+    synchronizeCloudStorage();
+    startInternalClockCycles(); // Запуск біржі та боргу
+    fetchChatHistory();         // Історія чату
+    establishRealtimeWebsockets(); // Адмінка та чат в реалтаймі
 }
 
-async function firstTimeCloudFetch() {
+async function synchronizeCloudStorage() {
+    console.log("Початок синхронізації з Бобро-Лісом для користувача:", userLogin);
+    
+    // Стандартні дефолтні значення
+    cashBalance = 100.00;
+    coinBalance = 0;
+    debtBalance = 0.00;
+    ownedStocksCount = 0;
+    let fallbackStuff = { owned_items: "", has_passport: false };
+
+    let isLoaded = false;
+
+    // ⏱️ ЗАХИСТ ВІД ЗАВИСАННЯ: Якщо база тупить більше 2.5 секунд - пускаємо в гру!
+    const skipTimer = setTimeout(() => {
+        if (!isLoaded) {
+            isLoaded = true;
+            console.warn("⏱️ База даних задумчива. Вмикаємо локальний режим!");
+            renderApplicationUI(fallbackStuff);
+            closeLoadingScreen();
+        }
+    }, 2500);
+
     try {
+        // Отримуємо гроші
         let { data: accData } = await supabaseClient.from('user_money').select('*').eq('login', userLogin);
         if (accData && accData.length > 0) {
-            cashBalance = parseFloat(accData[0].money) || 0.00;
-            coinBalance = parseInt(accData[0].bobr_coins) || 0;
-            debtBalance = parseFloat(accData[0].debt) || 0.00;
-            ownedStocksCount = parseInt(accData[0].stocks) || 0;
+            let account = accData[0];
+            cashBalance = parseFloat(account.money) || 0.00;
+            coinBalance = parseInt(account.bobr_coins) || 0;
+            debtBalance = parseFloat(account.debt) || 0.00;
+            ownedStocksCount = parseInt(account.stocks) || 0;
         } else {
+            // Якщо гравця немає в базі - створюємо запис
             await supabaseClient.from('user_money').insert({ login: userLogin, money: 100.00, bobr_coins: 0 });
         }
 
+        // Отримуємо майно
         let { data: propData } = await supabaseClient.from('stuff').select('*').eq('login', userLogin);
         if (propData && propData.length > 0) {
-            renderApplicationUI(propData[0]);
+            fallbackStuff = propData[0];
         } else {
-            let defStuff = { owned_items: "", has_passport: false };
             await supabaseClient.from('stuff').insert({ login: userLogin, owned_items: "", has_passport: false });
-            renderApplicationUI(defStuff);
         }
-    } catch(e) {
-        console.log("Локальний старт:", e);
+
+    } catch (globalError) {
+        console.error("Помилка підключення:", globalError);
+    } finally {
+        if (!isLoaded) {
+            clearTimeout(skipTimer);
+            isLoaded = true;
+            renderApplicationUI(fallbackStuff);
+            closeLoadingScreen();
+            console.log("✅ Синхронізація успішна!");
+        }
     }
-}
-
-function startCloudSyncIntervals() {
-    // 📤 Кожні 4 секунди пакуємо цифри в базу
-    setInterval(async () => {
-        try {
-            await supabaseClient.from('user_money').update({ 
-                money: cashBalance,
-                bobr_coins: coinBalance,
-                debt: debtBalance,
-                stocks: ownedStocksCount
-            }).eq('login', userLogin);
-        } catch (err) {}
-    }, 4000);
-
-    // 📥 Кожні 8 секунд звіряємося з базою (про всяк випадок)
-    setInterval(async () => {
-        try {
-            let { data: accData } = await supabaseClient.from('user_money').select('*').eq('login', userLogin);
-            if (accData && accData.length > 0) {
-                let sMoney = parseFloat(accData[0].money);
-                let sDebt = parseFloat(accData[0].debt);
-                if (Math.abs(cashBalance - sMoney) > 2) cashBalance = sMoney;
-                if (Math.abs(debtBalance - sDebt) > 0.1) debtBalance = sDebt;
-                coinBalance = parseInt(accData[0].bobr_coins) || 0;
-                ownedStocksCount = parseInt(accData[0].stocks) || 0;
-            }
-            let { data: propData } = await supabaseClient.from('stuff').select('*').eq('login', userLogin);
-            if (propData && propData.length > 0) {
-                renderApplicationUI(propData[0]);
-            }
-        } catch (err) {}
-    }, 8000);
 }
 
 function renderApplicationUI(stuffObject) {
@@ -1135,6 +1129,175 @@ function handleMusicToggle() {
         label.innerText = "ВИМК";
         label.style.color = "var(--danger-color)";
     }
+}
+
+// ==========================================================================
+// ДІЇ ТА ЗБЕРЕЖЕННЯ (МИТТЄВИЙ ЗАПИС В БАЗУ ДАНИХ)
+// ==========================================================================
+async function processClickerAction(event) {
+    cashBalance += 1.50;
+    document.getElementById('ui-balance-usd').innerText = cashBalance.toFixed(2);
+    
+    const clickBox = document.querySelector('.clicker-box');
+    const rect = clickBox.getBoundingClientRect();
+    const floating = document.createElement('div');
+    floating.className = 'floating-text';
+    floating.innerText = '+1.50$';
+    let x = event.clientX - rect.left || 70;
+    let y = event.clientY - rect.top || 70;
+    floating.style.left = x + 'px';
+    floating.style.top = y + 'px';
+    clickBox.appendChild(floating);
+    setTimeout(() => floating.remove(), 600);
+
+    // Миттєвий сейв у хмару
+    await supabaseClient.from('user_money').update({ money: cashBalance }).eq('login', userLogin);
+}
+
+async function processBarberClick() {
+    if(barberRemainingClicks <= 0) return;
+    barberRemainingClicks--;
+    const label = document.getElementById('ui-barber-status');
+    const image = document.getElementById('ui-barber-img');
+    label.innerText = `Залишилося зрізати: ${barberRemainingClicks} жмутів шерсті`;
+    if(barberRemainingClicks === 0) {
+        image.src = "cutted.png";
+        label.innerText = "✂ Бобер поголений! Справжня модель лісу.";
+        cashBalance += 5.00;
+        document.getElementById('ui-balance-usd').innerText = cashBalance.toFixed(2);
+        
+        await supabaseClient.from('user_money').update({ money: cashBalance }).eq('login', userLogin);
+        alert("💈 Перукарня успішно обслугла клієнта! +5.00 $");
+        
+        setTimeout(() => {
+            barberRemainingClicks = 15;
+            image.src = "nocut.png";
+            label.innerText = "Залишилося зрізати: 15 жмутів шерсті";
+        }, 7000);
+    }
+}
+
+// ==========================================================================
+// КАЗИНО ТРИ СОКИРИ
+// ==========================================================================
+async function executeCasinoSpin() {
+    const betInput = document.getElementById('ui-casino-bet');
+    let betAmount = parseFloat(betInput.value) || 0;
+    if(betAmount < 5) { alert("❌ Мінімальна ставка 5 $"); return; }
+    if(cashBalance < betAmount) { alert("❌ Немає готівки!"); return; }
+    
+    cashBalance -= betAmount;
+    document.getElementById('ui-balance-usd').innerText = cashBalance.toFixed(2);
+    await supabaseClient.from('user_money').update({ money: cashBalance }).eq('login', userLogin);
+    
+    const screen = document.getElementById('ui-casino-display');
+    screen.innerText = "⚡ КРУТИМО... ⚡";
+    let counter = 0;
+    const symbols = ["🪵", "🪓", "🪙", "💎", "🍒"];
+    let interval = setInterval(() => {
+        screen.innerText = `${symbols[Math.floor(Math.random() * symbols.length)]} | ${symbols[Math.floor(Math.random() * symbols.length)]} | ${symbols[Math.floor(Math.random() * symbols.length)]}`;
+        counter++;
+        if(counter > 8) {
+            clearInterval(interval);
+            determineCasinoResult(betAmount);
+        }
+    }, 100);
+}
+
+async function determineCasinoResult(bet) {
+    const screen = document.getElementById('ui-casino-display');
+    const roll = Math.random();
+    if (roll > 0.75) {
+        let prizeCoins = Math.floor(Math.random() * 6) + 2;
+        coinBalance += prizeCoins;
+        let cashPrize = bet * 3;
+        cashBalance += cashPrize;
+        screen.innerText = `💎 ДЖЕКПОТ: +${cashPrize}$ & +${prizeCoins}BB!`;
+    } else if (roll > 0.45) {
+        let cashPrize = Math.floor(bet * 1.5);
+        cashBalance += cashPrize;
+        screen.innerText = `🪵 ВИГРАШ: +${cashPrize} $`;
+    } else {
+        screen.innerText = "❌ ПРОГРАШ!";
+    }
+    await supabaseClient.from('user_money').update({ money: cashBalance, bobr_coins: coinBalance }).eq('login', userLogin);
+    forceUIRefreshWithoutCloud();
+}
+
+function forceUIRefreshWithoutCloud() {
+    document.getElementById('ui-balance-usd').innerText = cashBalance.toFixed(2);
+    document.getElementById('ui-balance-bb').innerText = coinBalance;
+    document.getElementById('ui-inv-stocks').innerText = ownedStocksCount + " шт.";
+    if(debtBalance > 0) {
+        document.getElementById('ui-debt-banner').style.display = "block";
+        document.getElementById('ui-debt-display').innerText = `Борг: ${debtBalance.toFixed(2)} $ (+10% кожні 30 сек)`;
+    } else {
+        document.getElementById('ui-debt-banner').style.display = "none";
+    }
+}
+
+// ==========================================================================
+// 📈 БОБРОВА ФОНДОВА БІРЖА ТА СИСТЕМА ДИНАМІКИ КУРСУ В РЕАЛТАЙМІ
+// ==========================================================================
+function renderStockChart() {
+    const container = document.getElementById('ui-mini-chart');
+    if(!container) return;
+    container.innerHTML = "";
+    let maxPrice = Math.max(...priceHistoryArr);
+    priceHistoryArr.forEach(price => {
+        const bar = document.createElement('div');
+        bar.className = 'chart-bar';
+        bar.style.height = ((price / maxPrice) * 100) + '%';
+        bar.style.backgroundColor = (priceHistoryArr[priceHistoryArr.length-1] >= priceHistoryArr[priceHistoryArr.length-2]) ? "var(--success-color)" : "var(--danger-color)";
+        container.appendChild(bar);
+    });
+}
+
+async function buyStockShare() {
+    if(cashBalance < currentStockMarketPrice) { alert("❌ Брак грошей!"); return; }
+    cashBalance -= currentStockMarketPrice;
+    ownedStocksCount++;
+    forceUIRefreshWithoutCloud();
+    await supabaseClient.from('user_money').update({ money: cashBalance, stocks: ownedStocksCount }).eq('login', userLogin);
+}
+
+async function sellStockShare() {
+    if(ownedStocksCount <= 0) { alert("❌ Немає акцій!"); return; }
+    cashBalance += currentStockMarketPrice;
+    ownedStocksCount--;
+    forceUIRefreshWithoutCloud();
+    await supabaseClient.from('user_money').update({ money: cashBalance, stocks: ownedStocksCount }).eq('login', userLogin);
+}
+
+// ==========================================================================
+// ⏳ СИСТЕМА КРЕДИТІВ ТА ЦИКЛИ ЖИТТЯ БІРЖІ (РЕАЛЬНИЙ ЧАС НА СТОРІНЦІ)
+// ==========================================================================
+function startInternalClockCycles() {
+    // Автономне оновлення акцій кожні 12 секунд
+    setInterval(() => {
+        let changePercent = (Math.random() * 20 - 10);
+        currentStockMarketPrice += (currentStockMarketPrice * (changePercent / 100));
+        if(currentStockMarketPrice < 5) currentStockMarketPrice = 5;
+        priceHistoryArr.push(Math.round(currentStockMarketPrice));
+        if(priceHistoryArr.length > 15) priceHistoryArr.shift();
+        
+        const trendUI = document.getElementById('ui-stock-trend');
+        if(trendUI) {
+            document.getElementById('ui-stock-price').innerText = currentStockMarketPrice.toFixed(2) + " $";
+            trendUI.innerText = (changePercent >= 0 ? "+" : "") + changePercent.toFixed(2) + "%";
+            trendUI.className = "stock-trend " + (changePercent >= 0 ? "trend-up" : "trend-down");
+        }
+        renderStockChart();
+    }, 12000);
+
+    // Нарахування відсотків по кредиту кожні 30 секунд
+    setInterval(async () => {
+        if(debtBalance > 0) {
+            debtBalance += debtBalance * 0.10;
+            forceUIRefreshWithoutCloud();
+            await supabaseClient.from('user_money').update({ debt: debtBalance }).eq('login', userLogin);
+        }
+    }, 30000);
 }
 
 // ==========================================================================
