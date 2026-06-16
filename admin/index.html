@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOBER-BANK — Панель Головного Адміна 👑</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #111116;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        header {
+            background: linear-gradient(135deg, #cc0000 0%, #660000 100%);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+        header h1 { margin: 0; font-size: 2rem; color: #fff; }
+        header p { margin: 5px 0 0 0; color: #ffb3b3; font-style: italic; }
+
+        .admin-container {
+            background-color: #1e1e24;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 550px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            border: 2px solid #3f3f50;
+        }
+        h2 { margin-top: 0; color: #ff4d4d; border-bottom: 1px solid #3f3f50; padding-bottom: 8px; }
+        
+        label { display: block; margin-top: 15px; font-weight: bold; color: #ccc; }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #3f3f50;
+            border-radius: 6px;
+            background-color: #111116;
+            color: #fff;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        input:focus { border-color: #ff4d4d; outline: none; }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff4d4d;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:hover { background-color: #cc0000; transform: translateY(-2px); }
+        button:active { transform: scale(0.98); }
+
+        .btn-secondary { background-color: #3f3f50; }
+        .btn-secondary:hover { background-color: #555566; }
+        .btn-warning { background-color: #ff9f1c; color: #111116; }
+        .btn-warning:hover { background-color: #e08b14; }
+
+        .status-box {
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+            background-color: #2a2a35;
+        }
+        
+        .flex-row { display: flex; gap: 10px; }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #252530;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>👑 ПАНЕЛЬ КЕРУВАННЯ БОБРАМИ</h1>
+        <p>Повноваження: Головний Лісничий (Адміністратор)</p>
+    </header>
+
+    <!-- СЕКЦІЯ 1: ГЛОБАЛЬНІ СИСТЕМНІ ТРИГЕРИ (REALTIME) -->
+    <div class="admin-container">
+        <h2>🚨 Системні Накази (Глобальні)</h2>
+        
+        <div class="toggle-container">
+            <span>🔴 Увімкнути червону плашку тривоги на сайті:</span>
+            <input type="checkbox" id="maintenance-toggle" style="width: auto; margin: 0;" onchange="updateSystemStatus()">
+        </div>
+
+        <label>⚡ Примусове перезавантаження сторінки у всіх юзерів:</label>
+        <button class="btn-warning" onclick="triggerGlobalReload()">🚨 ВІДПРАВИТИ СИГНАЛ ПЕРЕЗАВАНТАЖЕННЯ</button>
+        
+        <div id="system-status-msg" class="status-box" style="color: #aaa;">Статус системи: Очікування дій...</div>
+    </div>
+
+    <!-- СЕКЦІЯ 2: РЕДАГУВАННЯ БАЛАНСІВ ТА ГРОШЕЙ -->
+    <div class="admin-container">
+        <h2>💰 Маніпуляція Рахунками Гравців</h2>
+        
+        <label>Логін бобра (жертви або друга):</label>
+        <input type="text" id="target-login" placeholder="Наприклад: bodia123">
+
+        <label>Оберіть валюту для зміни:</label>
+        <select id="currency-type">
+            <option value="money">Звичайні Бакси ($)</option>
+            <option value="bobr_coins">Крипто BB-Coins</option>
+        </select>
+
+        <label>Нове значення (встановлює точну суму):</label>
+        <input type="number" id="new-balance-value" step="0.01" placeholder="Введіть число (наприклад: 5000)">
+
+        <button onclick="setPlayerBalance()">💎 Оновити баланс в базі</button>
+        <div id="balance-status-msg" class="status-box" style="color: #aaa;">Статус балансу: Очікування введення...</div>
+    </div>
+
+    <!-- СЕКЦІЯ 3: КЕРУВАННЯ МАЙНОМ ТА ДОСТАВКАМИ -->
+    <div class="admin-container">
+        <h2>📦 Конфіскація або Видача Майна</h2>
+        
+        <label>Логін бобра:</label>
+        <input type="text" id="property-login" placeholder="Наприклад: bodia123">
+
+        <label>Поточний список речей в інвентарі (через кому):</label>
+        <input type="text" id="property-items" placeholder="Елітний Сарай,Люкс Квартира">
+
+        <div class="toggle-container">
+            <span>🪪 Наявність державного паспорта:</span>
+            <select id="property-passport" style="width: auto; margin: 0; padding: 5px;">
+                <option value="false">Немає</option>
+                <option value="true">Є паспорт</option>
+            </select>
+        </div>
+
+        <button class="btn-secondary" onclick="updatePlayerStuff()">🛠 Переписати майно бобра</button>
+        <div id="stuff-status-msg" class="status-box" style="color: #aaa;">Статус майна: Очікування дій...</div>
+    </div>
+
+    <script>
+        // Ініціалізація клієнта Supabase (Ті самі ключі, що й на сайті)
+        const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
+        const adminSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Початкове завантаження стану адмін-тумблерів з бази даних
+        async function loadCurrentSystemState() {
+            const { data, error } = await adminSupabase.from('system_status').select('*').eq('id', 1);
+            if (data && data.length > 0) {
+                document.getElementById('maintenance-toggle').checked = data[0].maintenance_alert;
+                document.getElementById('system-status-msg').innerText = "✅ Дані з бази успішно зчитано!";
+                document.getElementById('system-status-msg').style.color = "#4edf7a";
+            } else {
+                document.getElementById('system-status-msg').innerText = "❌ Помилка зчитування системи або таблиця пуста!";
+                document.getElementById('system-status-msg').style.color = "red";
+            }
+        }
+        loadCurrentSystemState();
+
+        // 1. Оновлення статусу тривожної плашки (вкл/викл)
+        async function updateSystemStatus() {
+            const isChecked = document.getElementById('maintenance-toggle').checked;
+            const msg = document.getElementById('system-status-msg');
+
+            const { error } = await adminSupabase
+                .from('system_status')
+                .update({ maintenance_alert: isChecked })
+                .eq('id', 1);
+
+            if(!error) {
+                msg.innerText = isChecked ? "🔴 Плашка тривоги активована на сайтах друзів!" : "🟢 Плашка вимкнена. Все спокійно.";
+                msg.style.color = isChecked ? "#ff4d4d" : "#4edf7a";
+            } else {
+                msg.innerText = "❌ Помилка оновлення статусу тривоги!";
+                msg.style.color = "red";
+            }
+        }
+
+        // 2. Генерація сигналу примусового перезавантаження (Force Reload)
+        async function triggerGlobalReload() {
+            const msg = document.getElementById('system-status-msg');
+            const newTrigger = Math.floor(Math.random() * 999999); // Нова випадкова версія для збиття кешу
+
+            const { error } = await adminSupabase
+                .from('system_status')
+                .update({ force_reload_trigger: newTrigger })
+                .eq('id', 1);
+
+            if(!error) {
+                msg.innerText = `🚨 Сигнал відправлено! Всі відкриті вкладки сайту зараз перезавантажаться. (ID: ${newTrigger})`;
+                msg.style.color = "#ff9f1c";
+            } else {
+                msg.innerText = "❌ Не вдалося надіслати сигнал перезавантаження!";
+                msg.style.color = "red";
+            }
+        }
+
+        // 3. Зміна балансу конкретного гравця
+        async function setPlayerBalance() {
+            const login = document.getElementById('target-login').value.trim();
+            const currency = document.getElementById('currency-type').value;
+            const rawValue = document.getElementById('new-balance-value').value;
+            const msg = document.getElementById('balance-status-msg');
+
+            if(!login || rawValue === "") {
+                msg.innerText = "❌ Заповніть логін бобра та нове значення балансу!";
+                msg.style.color = "red";
+                return;
+            }
+
+            const numericValue = parseFloat(rawValue);
+            let updateData = {};
+            updateData[currency] = numericValue;
+
+            const { error } = await adminSupabase
+                .from('user_money')
+                .update(updateData)
+                .eq('login', login);
+
+            if(!error) {
+                msg.innerText = `✔ Успішно! Для юзера_${login} встановлено новий рахунок ${currency}: ${numericValue}`;
+                msg.style.color = "#4edf7a";
+            } else {
+                msg.innerText = "❌ Помилка бази даних! Перевірте правильність логіна.";
+                msg.style.color = "red";
+            }
+        }
+
+        // 4. Переписування майна гравця
+        async function updatePlayerStuff() {
+            const login = document.getElementById('property-login').value.trim();
+            const items = document.getElementById('property-items').value.trim();
+            const hasPass = document.getElementById('property-passport').value === "true";
+            const msg = document.getElementById('stuff-status-msg');
+
+            if(!login) {
+                msg.innerText = "❌ Введіть логін для зміни майна!";
+                msg.style.color = "red";
+                return;
+            }
+
+            const { error } = await adminSupabase
+                .from('stuff')
+                .update({ owned_items: items, has_passport: hasPass })
+                .eq('login', login);
+
+            if(!error) {
+                msg.innerText = `✔ Майно бобра_${login} успішно перезаписано!`;
+                msg.style.color = "#4edf7a";
+            } else {
+                msg.innerText = "❌ Не вдалося оновити майно в таблиці 'stuff'!";
+                msg.style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>
