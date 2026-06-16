@@ -3,1107 +3,1595 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BOBER-BANK — Офіційний сайт v2.2.1</title>
+    <title>BOBER-BANK v3.0 — Мега-Моноліт 🪵</title>
+    <!-- Підключення бібліотеки Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1e1e24;
-            color: #fff;
+        /* ==========================================================================
+           1. ЗМІННІ ТА СТИЛІ ІНІЦІАЛІЗАЦІЇ (RESET & VARIABLES)
+           ========================================================================== */
+        :root {
+            --bg-color: #0b0b0f;
+            --card-bg: #16161f;
+            --card-inner: #1f1f2e;
+            --accent-color: #ff9f1c;
+            --accent-hover: #e08b14;
+            --text-color: #ffffff;
+            --text-muted: #8e8e9f;
+            --success-color: #4edf7a;
+            --danger-color: #ff4d4d;
+            --casino-gold: #ffd700;
+            --border-style: 1px solid #2a2a3d;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             min-height: 100vh;
-            transition: background 0.5s ease;
             overflow-x: hidden;
-            position: relative;
-        }
-        body.logged-in { 
-            background-color: #3d2314; 
+            padding-bottom: 60px;
         }
 
-        /* 🚨 Червоне сповіщення від адміна про оновлення */
-        #admin-global-alert {
-            width: 100%;
-            background: linear-gradient(90deg, #ff4d4d, #cc0000);
-            color: white;
-            text-align: center;
-            padding: 12px 0;
-            font-weight: bold;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 15px rgba(255,0,0,0.4);
+        /* ==========================================================================
+           2. ЕКРАН ЗАВАНТАЖЕННЯ (LOADER SCREEN)
+           ========================================================================== */
+        #loader-screen {
             position: fixed;
             top: 0;
             left: 0;
-            z-index: 9999;
-            display: none;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 0.9; }
-            50% { opacity: 1; }
-            100% { opacity: 0.9; }
-        }
-
-        header {
-            background-color: #ff9f1c;
             width: 100%;
-            text-align: center;
-            padding: 20px 0;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            position: relative;
-            z-index: 20;
-            margin-top: 0;
-        }
-        header.logged-in-header { 
-            background-color: #8e5a36; 
-        }
-        header h1 { 
-            margin: 0; 
-            color: #1e1e24; 
-            font-size: 2.5rem; 
-        }
-        header.logged-in-header h1 { 
-            color: #fff; 
+            height: 100%;
+            background-color: var(--bg-color);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        .menu-btn {
+        .spinner-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 80px;
+            height: 80px;
+            border: 6px solid #222230;
+            border-top: 6px solid var(--accent-color);
+            border-bottom: 6px solid var(--casino-gold);
+            border-radius: 50%;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        .spinner-logo {
             position: absolute;
-            left: 20px;
-            top: 22px;
             font-size: 2rem;
-            cursor: pointer;
-            color: #1e1e24;
-        }
-        header.logged-in-header .menu-btn { 
-            color: #fff; 
+            animation: pulse-logo 1.5s ease-in-out infinite;
         }
 
-        .container {
-            background-color: #2a2a35;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-            width: 350px;
+        #loader-text {
+            margin-top: 25px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(255, 159, 28, 0.3);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse-logo {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+
+        /* ==========================================================================
+           3. АДМІНСЬКА ТРИВОЖНА ПЛАШКА (MAINTENANCE ALERT)
+           ========================================================================== */
+        #maintenance-alert {
+            display: none;
+            width: 100%;
+            background: linear-gradient(90deg, #ff0000 0%, #990000 50%, #ff0000 100%);
+            background-size: 200% auto;
+            color: white;
             text-align: center;
-            margin: 20px 0;
-            position: relative;
-            z-index: 10;
-        }
-        .hidden { 
-            display: none !important; 
+            padding: 14px 10px;
+            font-weight: 800;
+            font-size: 1.05rem;
+            box-shadow: 0 4px 20px rgba(255, 0, 0, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 10000;
+            letter-spacing: 0.5px;
+            animation: alertBannerMove 3s linear infinite;
         }
 
-        input, select {
+        @keyframes alertBannerMove {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        /* ==========================================================================
+           4. ГОЛОВНИЙ КАРКАС ТА СЕТКА (LAYOUT CONTAINER)
+           ========================================================================== */
+        .app-container {
             width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 2px solid #3f3f50;
-            border-radius: 6px;
-            background-color: #1e1e24;
-            color: #fff;
+            max-width: 520px;
+            padding: 25px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
             box-sizing: border-box;
-            font-size: 1rem;
-        }
-        input:focus { 
-            border-color: #ff9f1c; 
-            outline: none; 
         }
 
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #ff9f1c;
-            border: none;
+        /* Базовий стиль для всіх інформаційних блоків */
+        .section-block {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            border: var(--border-style);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .section-block:hover {
+            box-shadow: 0 8px 24px rgba(255, 159, 28, 0.05);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            border-bottom: 1px solid #222230;
+            padding-bottom: 8px;
+        }
+
+        /* ==========================================================================
+           5. БАНКІВСЬКА КАРТКА (CREDIT CARD STYLES)
+           ========================================================================== */
+        .bank-card {
+            background: linear-gradient(135deg, #1b1002 0%, #2e1b04 40%, #0d0801 100%);
+            border: 2px solid var(--accent-color);
+            border-radius: 20px;
+            padding: 22px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(255, 159, 28, 0.15);
+            overflow: hidden;
+        }
+
+        .bank-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,159,28,0.05) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+        }
+
+        .card-chip {
+            width: 50px;
+            height: 38px;
+            background: linear-gradient(135deg, #ffe066 0%, #f5b041 50%, #b37d14 100%);
             border-radius: 6px;
-            color: #1e1e24;
-            font-size: 1rem;
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(255,255,255,0.5);
+        }
+
+        .card-chip::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 1px solid rgba(0,0,0,0.15);
+            border-radius: 6px;
+            background: linear-gradient(90deg, transparent 45%, rgba(0,0,0,0.2) 50%, transparent 55%);
+        }
+
+        .card-beaver-photo {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            border: 3px solid var(--accent-color);
+            object-fit: cover;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            background-color: #252530;
+        }
+
+        .card-number {
+            font-size: 1.4rem;
+            letter-spacing: 3px;
+            margin-bottom: 25px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.8);
+            color: #eaeaea;
+        }
+
+        .balances-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 159, 28, 0.1);
+        }
+
+        .balance-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .balance-item img {
+            width: 26px;
+            height: 26px;
+            object-fit: contain;
+        }
+
+        .balance-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: block;
+            text-transform: uppercase;
+        }
+
+        .balance-value {
+            font-size: 1.15rem;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        /* ==========================================================================
+           6. ЛІСОПОВАЛ КЛІКЕР (CLICKER SECTION)
+           ========================================================================== */
+        .clicker-box {
+            text-align: center;
+        }
+
+        .clicker-box p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .click-target {
+            width: 140px;
+            height: 140px;
+            margin: 20px auto;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+            transition: transform 0.05s ease;
+        }
+
+        .click-target:active {
+            transform: scale(0.9);
+        }
+
+        .click-target img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 12px rgba(255, 159, 28, 0.2));
+            transition: filter 0.1s;
+        }
+
+        .click-target:hover img {
+            filter: drop-shadow(0 0 20px rgba(255, 159, 28, 0.4));
+        }
+
+        /* Плавні вилітаючі цифри заробітку (+1.50$) */
+        .floating-text {
+            position: absolute;
+            color: var(--success-color);
+            font-weight: 900;
+            font-size: 1.4rem;
+            pointer-events: none;
+            animation: floatUp 0.6s ease-out forwards;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            z-index: 500;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-80px) scale(1.2); }
+        }
+
+        /* ==========================================================================
+           7. ПЕРУКАРНЯ ДЛЯ БОБРІВ (BARBER SYSTEM)
+           ========================================================================== */
+        .barber-box {
+            text-align: center;
+        }
+
+        .barber-status {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--casino-gold);
+            margin-bottom: 15px;
+            background: rgba(255,215,0,0.05);
+            padding: 6px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .barber-image-wrapper {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 15px auto;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 4px solid var(--accent-color);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            background-color: #14141c;
+        }
+
+        .barber-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.05s ease, filter 0.2s;
+            user-select: none;
+        }
+
+        .barber-image:active {
+            transform: scale(0.95) rotate(1deg);
+        }
+
+        /* ==========================================================================
+           8. КАЗИНО "ТРИ СОКИРИ" (CASINO SYSTEM)
+           ========================================================================== */
+        .casino-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .casino-display-container {
+            background: #0d0d12;
+            border: 2px dashed #2d2d3f;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
+        }
+
+        .casino-display {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: var(--casino-gold);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+            font-family: monospace;
+        }
+
+        .casino-controls {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .bet-input-group {
+            display: flex;
+            background: #14141c;
+            border: 1px solid #2d2d3f;
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        .bet-input-group span {
+            padding: 8px 10px;
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+
+        .bet-field {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            font-family: monospace;
+            font-size: 1.1rem;
+            padding: 5px;
+            outline: none;
+            font-weight: bold;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, #ff5252 100%);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 159, 28, 0.25);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 159, 28, 0.4);
+        }
+
+        .action-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* ==========================================================================
+           9. БОБРОВА БІРЖА (STOCK MARKET SYSTEM)
+           ========================================================================== */
+        .stock-market-box {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .stock-ticker-wrapper {
+            background: #0d0d12;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #222230;
+        }
+
+        .stock-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .stock-name {
+            font-weight: bold;
+            font-size: 1.05rem;
+        }
+
+        .stock-price {
+            font-family: monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .stock-trend {
+            font-size: 0.85rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .trend-up { background: rgba(78,223,122,0.15); color: var(--success-color); }
+        .trend-down { background: rgba(255,77,77,0.15); color: var(--danger-color); }
+
+        /* Імпровізований міні-графік з блоків */
+        .mini-chart-container {
+            height: 40px;
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            margin-top: 10px;
+            border-bottom: 1px solid #222230;
+            padding-bottom: 2px;
+        }
+
+        .chart-bar {
+            flex-grow: 1;
+            background-color: #2a2a3d;
+            border-radius: 2px 2px 0 0;
+            min-height: 5px;
+            transition: height 0.3s ease, background-color 0.3s ease;
+        }
+
+        .stock-trade-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .trade-btn {
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
-            transition: background 0.2s, transform 0.1s;
-        }
-        button:hover { 
-            background-color: #e08b14; 
-            transform: translateY(-2px); 
-        }
-        button:disabled { 
-            background-color: #555 !important; 
-            color: #aaa !important; 
-            cursor: not-allowed; 
-            transform: none !important; 
+            font-size: 0.95rem;
+            transition: opacity 0.2s;
         }
 
-        .switch-link { 
-            margin-top: 15px; 
-            font-size: 0.9rem; 
-            color: #ff9f1c; 
-            cursor: pointer; 
-            text-decoration: underline; 
-        }
-        .bomzh-text { 
-            font-size: 1.1rem; 
-            font-weight: bold; 
-            font-style: italic; 
-            margin-top: 15px; 
-            color: #ff4d4d; 
-        }
-        .bank-image { 
-            width: 100%; 
-            max-width: 250px; 
-            border-radius: 12px; 
-            margin-bottom: 15px; 
-            border: 4px solid #ff9f1c; 
-            cursor: pointer; 
-            transition: transform 0.1s;
-        }
-        .bank-image:active {
-            transform: scale(0.95);
+        .trade-btn-buy { background-color: var(--success-color); color: #000; }
+        .trade-btn-sell { background-color: var(--danger-color); color: white; }
+        .trade-btn:hover { opacity: 0.9; }
+
+        /* ==========================================================================
+           10. СИСТЕМА КРЕДИТІВ ТА БОРГІВ (CREDIT & DEBT SYSTEM)
+           ========================================================================== */
+        .credit-box {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        /* 🎰 КАЗІК СЛОТИ ТА АНІМАЦІЇ */
-        .slots-display { 
-            display: flex; 
-            justify-content: center; 
-            gap: 15px; 
-            margin: 20px 0; 
-            background-color: #15151a; 
-            padding: 15px; 
-            border-radius: 10px; 
-            border: 3px dashed #ff9f1c; 
-        }
-        .slot-box { 
-            font-size: 2.5rem; 
-            font-weight: bold; 
-            background-color: #22222b; 
-            width: 60px; 
-            height: 60px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            border-radius: 6px; 
-            color: #ff9f1c; 
-            transition: transform 0.1s ease;
-        }
-        .slot-spinning {
-            animation: slotAnimate 0.1s infinite linear;
-        }
-        @keyframes slotAnimate {
-            0% { transform: translateY(-5px); opacity: 0.6; }
-            100% { transform: translateY(5px); opacity: 0.6; }
+        .debt-alert-banner {
+            background: rgba(255,77,77,0.1);
+            border-left: 4px solid var(--danger-color);
+            padding: 10px 14px;
+            border-radius: 0 8px 8px 0;
+            display: none;
         }
 
-        /* 🏆 ЛІДЕРБОРД */
-        .leaderboard-list { 
-            margin-top: 20px; 
-            text-align: left; 
-            background: #15151a; 
-            padding: 10px; 
-            border-radius: 8px; 
-            border: 2px solid #ff9f1c; 
-            max-height: 300px; 
-            overflow-y: auto; 
-        }
-        .leader-row { 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 10px; 
-            border-bottom: 1px solid #333; 
-        }
-        .leader-money { 
-            color: #4edf7a; 
-            font-weight: bold; 
+        .debt-title {
+            font-weight: bold;
+            color: var(--danger-color);
+            font-size: 0.95rem;
+            margin-bottom: 3px;
         }
 
-        .credit-card { 
-            background-color: #382418; 
-            border: 2px solid #ff4d4d; 
-            border-radius: 10px; 
-            padding: 15px; 
-            margin-bottom: 15px; 
-            text-align: left; 
-        }
-        .shop-item { 
-            background-color: #4d3120; 
-            border: 2px solid #ff9f1c; 
-            border-radius: 10px; 
-            padding: 15px; 
-            margin-bottom: 20px; 
-            text-align: left; 
-        }
-        .price-tag { 
-            color: #4edf7a; 
-            font-weight: bold; 
-            font-size: 1.2rem; 
+        .debt-value {
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
         }
 
-        .barber-image { 
-            width: 100%; 
-            max-width: 250px; 
-            border-radius: 12px; 
-            border: 4px solid #ff9f1c; 
-            cursor: pointer; 
-            transition: transform 0.1s;
-        }
-        .barber-image:active {
-            transform: scale(0.97);
+        .credit-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
-        /* 🦫 БОБРОВИЙ ЧАТ */
-        .chat-box { 
-            display: flex; 
-            flex-direction: column; 
-            height: 400px; 
-            background-color: #15151a; 
-            border: 2px solid #ff9f1c; 
-            border-radius: 10px; 
-            overflow: hidden; 
-            margin: 15px 0; 
-        }
-        .chat-messages { 
-            flex-grow: 1; 
-            padding: 15px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-            text-align: left; 
-        }
-        .chat-msg-row { 
-            background-color: #252530; 
-            padding: 8px 12px; 
-            border-radius: 8px; 
-            border-left: 4px solid #ff9f1c; 
-            word-wrap: break-word; 
-        }
-        .chat-msg-user { 
-            font-weight: bold; 
-            color: #ffbf69; 
-            font-size: 0.9rem; 
-        }
-        .chat-msg-img { 
-            max-width: 100%; 
-            max-height: 180px; 
-            border-radius: 6px; 
-            margin-top: 8px; 
-            border: 1px solid #ff9f1c; 
-            display: block; 
-        }
-        .chat-inputs { 
-            display: flex; 
-            flex-direction: column; 
-            background-color: #1e1e24; 
-            padding: 10px; 
-            border-top: 1px solid #3f3f50; 
-            gap: 5px; 
-        }
-        .chat-row-fields { 
-            display: flex; 
-            gap: 5px; 
-        }
-        .chat-file-btn { 
-            background-color: #3f3f50; 
-            color: white; 
-            font-size: 0.8rem; 
-            padding: 5px; 
-            width: auto; 
+        .credit-btn {
+            padding: 12px;
+            background: #1f1f2e;
+            border: 1px solid #3d3d5c;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
         }
 
-        .loader { 
-            border: 6px solid #3f3f50; 
-            border-top: 6px solid #ff9f1c; 
-            border-radius: 50%; 
-            width: 50px; 
-            height: 50px; 
-            animation: spin 1s linear infinite; 
-            margin: 20px auto; 
-        }
-        @keyframes spin { 
-            0% { transform: rotate(0deg); } 
-            100% { transform: rotate(360deg); } 
+        .credit-btn-take:hover { background: #262639; border-color: var(--accent-color); }
+        .credit-btn-pay { background: linear-gradient(135deg, #1f2e24 0%, #173f24 100%); border-color: var(--success-color); }
+        .credit-btn-pay:hover { opacity: 0.9; }
+
+        /* ==========================================================================
+           11. МАГАЗИН МАЙНА + МУЗИКА (SHOP & MEDIA)
+           ========================================================================== */
+        .shop-header-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
 
-        /* 📜 СУПЕР БІЧНЕ МЕНЮ З С К Р О Л О М */
-        .sidebar {
-            position: fixed;
-            left: -260px;
-            top: 0;
-            width: 240px;
-            height: 100%;
-            background-color: #22120a;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.5);
-            transition: left 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
-            padding: 20px;
-            box-sizing: border-box;
-            z-index: 100;
-            overflow-y: auto; 
-            -webkit-overflow-scrolling: touch;
-        }
-        .sidebar.active { 
-            left: 0; 
-        }
-        .sidebar h3 { 
-            color: #ff9f1c; 
-            border-bottom: 2px solid #ff9f1c; 
-            padding-bottom: 10px; 
-            margin-top: 0; 
-            text-align: center; 
-        }
-        .sidebar ul { 
-            list-style: none; 
-            padding: 0; 
-            margin: 0; 
-        }
-        .sidebar ul li { 
-            padding: 12px 10px; 
-            color: #fff; 
-            cursor: pointer; 
-            border-radius: 6px; 
-            font-weight: bold; 
-            margin-bottom: 5px; 
-        }
-        .sidebar ul li:hover { 
-            background-color: #8e5a36; 
-        }
-        .close-sidebar-btn { 
-            text-align: right; 
-            font-size: 1.3rem; 
-            cursor: pointer; 
-            color: #ff9f1c; 
-            margin-bottom: 15px; 
+        .shop-header-box h2 {
+            font-size: 1.25rem;
+            color: var(--accent-color);
+            margin: 0;
         }
 
-        .passport-card { 
-            background: linear-gradient(135deg, #8e5a36 0%, #4d3120 100%); 
-            border: 4px solid #ff9f1c; 
-            border-radius: 15px; 
-            padding: 20px; 
-            text-align: left; 
-        }
-        .passport-label { 
-            color: #ff9f1c; 
-            font-weight: bold; 
-        }
-        .collider-box { 
-            background: radial-gradient(circle, #2c1a4d 0%, #110924 100%); 
-            border: 3px dashed #a855f7; 
+        .media-toggle-btn {
+            background: #14141c;
+            border: 1px solid var(--accent-color);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
         }
 
-        .easter-egg-tag { 
-            position: fixed; 
-            right: 15px; 
-            bottom: 15px; 
-            font-size: 0.75rem; 
-            color: rgba(255, 159, 28, 0.3); 
-            cursor: pointer; 
-            z-index: 999; 
+        .media-toggle-btn:hover {
+            background: rgba(255, 159, 28, 0.1);
         }
+
+        .shop-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .shop-card {
+            background: #12121a;
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 1px solid #222230;
+        }
+
+        .shop-card img {
+            width: 65px;
+            height: 65px;
+            border-radius: 8px;
+            object-fit: cover;
+            background-color: #222230;
+        }
+
+        .shop-card-details {
+            flex-grow: 1;
+        }
+
+        .shop-card-details h4 {
+            margin-bottom: 4px;
+            font-size: 1rem;
+        }
+
+        .shop-card-details p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .shop-card-buy-btn {
+            background-color: var(--accent-color);
+            color: black;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .shop-card-buy-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        /* ==========================================================================
+           12. РЕАЛТАЙМ ЛІСОВИЙ ЧАТ (REALTIME TEXT CHAT)
+           ========================================================================== */
+        .chat-box-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-messages-container {
+            background: #0d0d12;
+            height: 180px;
+            border-radius: 10px;
+            padding: 12px;
+            overflow-y: auto;
+            border: 1px solid #1f1f2e;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chat-msg {
+            font-size: 0.88rem;
+            line-height: 1.3;
+            word-break: break-word;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .chat-msg-author {
+            color: var(--accent-color);
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .chat-msg-text {
+            color: #f0f0f5;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input-field {
+            flex-grow: 1;
+            background: #14141c;
+            border: 1px solid #2d2d3f;
+            border-radius: 8px;
+            color: white;
+            padding: 10px 12px;
+            outline: none;
+            font-size: 0.9rem;
+        }
+
+        .chat-input-field:focus {
+            border-color: var(--accent-color);
+        }
+
+        .chat-send-btn {
+            background: var(--accent-color);
+            color: black;
+            border: none;
+            padding: 0 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* ==========================================================================
+           13. ІНВЕНТАР КОРИСТУВАЧА (INVENTORY STYLES)
+           ========================================================================== */
+        .inventory-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .inv-row {
+            background: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border-left: 3px solid var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .inv-row-active {
+            border-left-color: var(--success-color);
+        }
+
+        .inv-label { color: var(--text-muted); }
+        .inv-value { font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="admin-global-alert">УВАГА! Бобровий завіз оновлення іде! Може перезавантажитись сторінка 🌲</div>
-
-    <header id="main-header">
-        <div id="menu-trigger" class="menu-btn hidden" onclick="toggleSidebar(true)">☰</div>
-        <h1 id="header-title">🦫 BOBER-BANK</h1>
-    </header>
-
-    <div id="sidebar" class="sidebar">
-        <div class="close-sidebar-btn" onclick="toggleSidebar(false)">✖ Закрити</div>
-        <h3>Головне Меню</h3>
-        <ul>
-            <li onclick="showSection('balance-sec')">💰 Мій Баланс</li>
-            <li onclick="showSection('chat-sec')">💬 Бобровий Чат</li>
-            <li onclick="showSection('card-sec')">💳 Оформити картку</li>
-            <li onclick="showSection('job-sec')">🔨 Бобровий Лісоповал</li>
-            <li onclick="showSection('shop-sec')">🛒 Магазин Бобра</li>
-            <li onclick="showSection('transfer-sec')">💸 Надіслати Бакси</li>
-            <li onclick="showSection('barber-sec')">💈 Парихмарка Бобра</li>
-            <li onclick="showSection('casino-sec')">🎰 Бобровий Казік</li>
-            <li onclick="showSection('leaderboard-sec')">🏆 Світовий Топ Бобрів</li>
-            <li onclick="showSection('credit-sec')">🚨 Боброві Кредити</li>
-            <li onclick="showSection('crypto-sec')">📈 Глобальна Біржа</li>
-            <li id="menu-passport-item" class="hidden" onclick="showSection('passport-sec')">🪪 Паспорт Громадянина</li>
-            <li id="menu-collider-item" class="hidden" onclick="showSection('collider-sec')" style="color: #c084fc;">💥 Коллайдер Магнатів</li>
-        </ul>
-    </div>
-
-    <div id="register-box" class="container">
-        <h2>Створити акаунт Бобра</h2>
-        <input type="text" id="reg-login" placeholder="Введіть унікальний логін" required>
-        <input type="password" id="reg-password" placeholder="Надійний пароль" required>
-        <button onclick="registerUser()">Зареєструватися 🚀</button>
-        <div class="switch-link" onclick="toggleForms('login')">Вже зареєстровані? Увійти</div>
-    </div>
-
-    <div id="login-box" class="container hidden">
-        <h2>Вхід до BOBER-BANK</h2>
-        <input type="text" id="login-username" placeholder="Введіть логін">
-        <input type="password" id="login-password" placeholder="Введіть пароль">
-        <button onclick="loginUser()">Увійти 🔐</button>
-        <div class="switch-link" onclick="toggleForms('register')">Створити новий акаунт</div>
-    </div>
-
-    <div id="balance-sec" class="container hidden bank-section">
-        <h2>Твій рахунок:</h2>
-        <h1 style="color: #4edf7a; font-size: 2.7rem; margin: 10px 0;"><span id="user-money-display">0.00</span> $</h1>
-        <h3 style="color: #ffbf69; margin: 5px 0;">Крипто: <span id="user-coin-display">0</span> BB-Coin</h3>
-        
-        <div id="debt-alert-box" class="hidden" style="background: red; padding:10px; border-radius:8px; margin:15px 0;">
-            ⚠ ТВІЙ БОРГ БАНКУ: <span id="current-debt-display">0.00</span> $
+    <!-- ⏳ ЕКРАН ЗАВАНТАЖЕННЯ -->
+    <div id="loader-screen">
+        <div class="spinner-container">
+            <div class="spinner"></div>
+            <div class="spinner-logo">🪵</div>
         </div>
-        <div class="bomzh-text">ех у тебе немає ні бакса який ж ти бомж</div>
-        
-        <div style="margin-top:20px; text-align:left; border-top:1px dashed #555; padding-top:12px;">
-            <b>📋 Твоє майно:</b> <br>
-            <span id="inv-items-list" style="color:#ffbf69; font-style:italic;">Нічого немає</span>
-        </div>
+        <p id="loader-text">СИНХРОНІЗАЦІЯ З БОБРО-ЛІСОМ...</p>
     </div>
 
-    <div id="chat-sec" class="container hidden bank-section" style="width: 400px;">
-        <h2>💬 Чат Бобрів</h2>
-        <div class="chat-box">
-            <div id="chat-messages-container" class="chat-messages"></div>
-            <div class="chat-inputs">
-                <div class="chat-row-fields">
-                    <input type="text" id="chat-msg-input" placeholder="Напиши щось...">
-                    <button onclick="sendChatMessage()" style="width: auto; margin:0; padding:10px;">🚀</button>
+    <!-- 🚨 АДМІНСЬКА ПЛАШКА ТРИВОГИ -->
+    <div id="maintenance-alert">🚨 УВАГА ЛІСНИЦТВА: НА СЕРВЕРІ ПРОВЕДЯТЬСЯ ТЕХНІЧНІ РОБОТИ! 🚨</div>
+
+    <!-- ПЛЕЄР МУЗИКИ -->
+    <audio id="global-bass-player" loop src="music.mp4"></audio>
+
+    <!-- ГОЛОВНИЙ ФРЕМВОРК СТОРІНКИ -->
+    <div class="app-container">
+
+        <!-- СЕКЦІЯ 1: БАНКІВСЬКА КАРТКА -->
+        <div class="bank-card">
+            <div class="card-header">
+                <div class="card-chip"></div>
+                <img src="beaver.jpg" alt="Бобер" class="card-beaver-photo">
+            </div>
+            <div class="card-number" id="ui-card-number">BOBER-USER-CARD</div>
+            
+            <div class="balances-grid">
+                <div>
+                    <span class="balance-label">Готівка (USD)</span>
+                    <div class="balance-item">
+                        <img src="dollar.png" alt="USD">
+                        <span class="balance-value" id="ui-balance-usd">0.00</span>
+                    </div>
                 </div>
-                <div class="chat-row-fields" style="align-items: center;">
-                    <input type="text" id="chat-img-url" placeholder="URL картинки..." style="margin:0;">
-                    <input type="file" id="chat-file-input" accept="image/*" class="hidden" onchange="handleFileAsBase64(this)">
-                    <button onclick="document.getElementById('chat-file-input').click()" class="chat-file-btn">📂 Файл</button>
+                <div>
+                    <span class="balance-label">Валюта (BobrCoin)</span>
+                    <div class="balance-item">
+                        <img src="bobr.png" alt="BB">
+                        <span class="balance-value" id="ui-balance-bb">0</span>
+                    </div>
                 </div>
-                <div id="file-status-label" style="font-size:0.75rem; color:#4edf7a; display:none;">Файл стиснуто і готово!</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="card-sec" class="container hidden bank-section">
-        <h2>VIP-Картка</h2>
-        <button id="buy-btn" onclick="startCardOrdering()">Замовити безкоштовно пластик</button>
-        <div id="loading-section" class="hidden"><div class="loader"></div></div>
-        <div id="status-message" style="margin-top:15px; font-weight:bold;"></div>
-    </div>
-
-    <div id="job-sec" class="container hidden bank-section">
-        <h2>Державний Лісоповал 🔨</h2>
-        <img src="beaver.jpeg" alt="Beaver" class="bank-image" onclick="clickBeaver()">
-        <h3>Нарубано: <span id="clicker-money" style="color:#4edf7a;">0.00</span> $</h3>
-    </div>
-
-    <div id="shop-sec" class="container hidden bank-section">
-        <h2>🛒 Магазин Нерухомості</h2>
-        <div id="shop-items-container">
-            <div class="shop-item">
-                <h3>🪵 Елітний Бобровий Сарай</h3>
-                <p class="price-tag">10.00 $</p>
-                <button onclick="buyProduct('Елітний Сарай', 10.00)">Придбати Сарай</button>
-            </div>
-            <div class="shop-item">
-                <h3>🏢 Люкс Квартира в Дуплі</h3>
-                <p class="price-tag">50.00 $</p>
-                <button onclick="buyProduct('Люкс Квартира', 50.00)">Придбати Квартиру</button>
-            </div>
-            <div class="shop-item">
-                <h3>🪪 Державний Паспорт Бобра</h3>
-                <p class="price-tag">1000.00 $</p>
-                <button style="background-color: #ff4d4d; color: white;" onclick="buyPassportItem()">Оформити паспорт</button>
             </div>
         </div>
 
-        <div id="shop-loading" class="hidden"><div class="loader"></div><p>Пакуємо коробки... ⏳</p></div>
-
-        <div id="shop-delivery" class="hidden">
-            <h3>📦 Оформлення бобро-доставки</h3>
-            <p>Куплено: <span id="delivery-item-name" style="color:#ff9f1c; font-weight:bold;"></span></p>
-            <select id="delivery-method">
-                <option value="Нова Пошта Бобрів">Нова Пошта Бобрів</option>
-                <option value="Укр Ліс Пошта">Укр Ліс Пошта</option>
-            </select>
-            <button onclick="confirmDelivery()">Відправити в дорогу та повернутись у магазин 🚀</button>
+        <!-- СЕКЦІЯ 2: КЛІКЕР -->
+        <div class="section-block clicker-box">
+            <div class="section-title">🪓 Лісоповал Клікер</div>
+            <p>Рубай ліс — заробляй елітні зелені бакси!</p>
+            <div class="click-target" id="click-trigger-element">
+                <img src="dollar.png" alt="Клікер">
+            </div>
         </div>
-        <div id="shop-status-message" style="margin-top:15px; font-weight:bold;"></div>
-    </div>
 
-    <div id="transfer-sec" class="container hidden bank-section">
-        <h2>💸 Міжнародний Переказ</h2>
-        <input type="text" id="transfer-target" placeholder="Логін отримувача">
-        <input type="number" id="transfer-amount" step="0.01" placeholder="Сума баксів">
-        <button onclick="sendMoneyTransaction()">Надіслати 💸</button>
-        <div id="transfer-status-message" style="margin-top:15px; font-weight:bold;"></div>
-    </div>
-
-    <div id="barber-sec" class="container hidden bank-section">
-        <h2>💈 Салон "Волохатий Бобер"</h2>
-        <h3 id="clicks-left-display">Залишилося зрізати: 15 жмутів</h3>
-        <img id="barber-bober-img" src="nocut.png" alt="Bober" class="barber-image" onclick="clickBarberBober()">
-    </div>
-
-    <div id="casino-sec" class="container hidden bank-section">
-        <h2>🎰 Бобровий Казік</h2>
-        <div class="slots-display">
-            <div id="slot-1" class="slot-box">7</div>
-            <div id="slot-2" class="slot-box">7</div>
-            <div id="slot-3" class="slot-box">7</div>
+        <!-- СЕКЦІЯ 3: ПЕРУКАРНЯ ДЛЯ БОБРІВ -->
+        <div class="section-block barber-box">
+            <div class="section-title">💈 Салон "Волохатий Бобер"</div>
+            <div class="barber-status" id="ui-barber-status">Залишилося зрізати: 15 жмутів шерсті</div>
+            <div class="barber-image-wrapper">
+                <img id="ui-barber-img" src="nocut.png" alt="Бобер на стрижку" class="barber-image">
+            </div>
         </div>
-        <input type="number" id="casino-bet" placeholder="Ставка ($)">
-        <button id="spin-btn" onclick="playCasinoSlots()">Крутити 🚀</button>
-        <div id="casino-status-message" style="margin-top:15px; font-weight:bold;"></div>
-    </div>
 
-    <div id="leaderboard-sec" class="container hidden bank-section">
-        <h2>🏆 Топ Найбагатших Бобрів Лісу</h2>
-        <div id="leaderboard-container" class="leaderboard-list"></div>
-    </div>
-
-    <div id="credit-sec" class="container hidden bank-section">
-        <h2>🚨 Боброві Кредити</h2>
-        <div class="credit-card">
-            <h3>🪵 Мікро-Колода</h3>
-            <h4>Сума: 5.00 $</h4>
-            <button onclick="takeBoberCredit(5.00)">Взяти 5$ (5% кожні 10 сек)</button>
+        <!-- СЕКЦІЯ 4: КАЗИНО ТРИ СОКИРИ -->
+        <div class="section-block casino-box">
+            <div class="section-title">🎰 Бобер-Казино "Три Сокири"</div>
+            <div class="casino-grid">
+                <div class="casino-display-container">
+                    <div class="casino-display" id="ui-casino-display">🎰 БОБЕР-СЛОТ 🎰</div>
+                </div>
+                <div class="casino-controls">
+                    <div class="bet-input-group">
+                        <span>Ставка:</span>
+                        <input type="number" id="ui-casino-bet" class="bet-field" value="20" min="5">
+                    </div>
+                    <button class="action-btn" onclick="executeCasinoSpin()">КРУТИТИ</button>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div id="crypto-sec" class="container hidden bank-section">
-        <h2>📈 Глобальна Біржа</h2>
-        <h1 style="color:#ffbf69;"><span id="crypto-rate-display">10.00</span> $</h1>
-        <input type="number" id="crypto-amount" placeholder="Кількість коїнів">
-        <button onclick="tradeCrypto('buy')" style="background-color:#4edf7a;">КУПИТИ</button>
-        <button onclick="tradeCrypto('sell')" style="background-color:#ff4d4d; color:white;">ПРОДАТИ</button>
-        <div id="crypto-status-message" style="margin-top:15px; font-weight:bold;"></div>
-    </div>
-
-    <div id="passport-sec" class="container hidden bank-section">
-        <h2>🪪 Паспорт Бобра</h2>
-        <div class="passport-card">
-            <div><span class="passport-label">Ім'я:</span> <span id="pass-name">—</span></div>
-            <div><span class="passport-label">Рахунок:</span> <span id="pass-cash">—</span></div>
+        <!-- СЕКЦІЯ 5: БОБРОВА БІРЖА -->
+        <div class="section-block stock-market-box">
+            <div class="section-title">📈 Фондова Біржа Лісу</div>
+            <div class="stock-ticker-wrapper">
+                <div class="stock-info-row">
+                    <span class="stock-name">🌳 Акції Деревообробки (WOOD)</span>
+                    <span class="stock-trend trend-up" id="ui-stock-trend">+0.00%</span>
+                </div>
+                <div class="stock-info-row">
+                    <span style="color: var(--text-muted); font-size: 0.9rem;">Поточний курс:</span>
+                    <span class="stock-price" id="ui-stock-price">50.00 $</span>
+                </div>
+                <div class="mini-chart-container" id="ui-mini-chart">
+                    <!-- Стовпчики графіка генеруються скриптом -->
+                </div>
+            </div>
+            <div class="stock-trade-controls">
+                <button class="trade-btn trade-btn-buy" onclick="buyStockShare()">КУПИТИ (1)</button>
+                <button class="trade-btn trade-btn-sell" onclick="sellStockShare()">ПРОДАТИ (1)</button>
+            </div>
         </div>
+
+        <!-- СЕКЦІЯ 6: КРЕДИТИ ТА БОРГОВА СИСТЕМА -->
+        <div class="section-block credit-box">
+            <div class="section-title">🏦 Кредитний Відділ Лісництва</div>
+            
+            <div class="debt-alert-banner" id="ui-debt-banner">
+                <div class="debt-title">⚠️ НЕОПЛАЧЕНИЙ БОРГ У БАНКУ!</div>
+                <div class="debt-value" id="ui-debt-display">Борг: 0.00 $ (+10% кожні 30 сек)</div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+                Потрібні швидкі гроші? Візьми кредит на 200.00 $. Кожні 30 секунд нараховується пеня 10%!
+            </p>
+
+            <div class="credit-actions">
+                <button class="credit-btn credit-btn-take" onclick="takeBankLoan()">ВЗЯТИ КРЕДИТ</button>
+                <button class="credit-btn credit-btn-pay" onclick="payBankLoan()">ПОГАСИТИ БОРГ</button>
+            </div>
+        </div>
+
+        <!-- СЕКЦІЯ 7: МАГАЗИН МАЙНА З МУЗИКОЮ -->
+        <div class="section-block">
+            <div class="shop-header-box">
+                <div class="section-title" style="margin:0; border:none; padding:0;">🛒 Магазин Нерухомості</div>
+                <button class="media-toggle-btn" onclick="handleMusicToggle()">
+                    <span>🔊 Баси:</span> <span id="ui-music-status-label" style="color:var(--danger-color)">ВИМК</span>
+                </button>
+            </div>
+
+            <div class="shop-list">
+                <!-- Товар 1: Сарай -->
+                <div class="shop-card">
+                    <img src="sarai.png" alt="Сарай">
+                    <div class="shop-card-details">
+                        <h4>Елітний Сарай</h4>
+                        <p>Ціна: 150.00 $</p>
+                    </div>
+                    <button class="shop-card-buy-btn" onclick="purchaseProperty('Елітний Сарай', 150)">Купити</button>
+                </div>
+
+                <!-- Товар 2: Люкс Квартира -->
+                <div class="shop-card">
+                    <img src="kvart.png" alt="Квартира">
+                    <div class="shop-card-details">
+                        <h4>Люкс Квартира</h4>
+                        <p>Ціна: 800.00 $</p>
+                    </div>
+                    <button class="shop-card-buy-btn" onclick="purchaseProperty('Люкс Квартира', 800)">Купити</button>
+                </div>
+
+                <!-- Товар 3: Державний паспорт -->
+                <div class="shop-card">
+                    <div style="font-size: 2.2rem; padding: 0 12px;">🪪</div>
+                    <div class="shop-card-details">
+                        <h4>Державний Паспорт Лісу</h4>
+                        <p>Ціна: 50.00 $</p>
+                    </div>
+                    <button class="shop-card-buy-btn" onclick="purchasePassport(50)">Купити</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- СЕКЦІЯ 8: РЕАЛТАЙМ ЧАТ ЛІСУ -->
+        <div class="section-block chat-box-layout">
+            <div class="section-title">💬 Вселісовий Живий Чат</div>
+            <div class="chat-messages-container" id="ui-chat-container">
+                <!-- Повідомлення рендеряться сюди в реальному часі -->
+            </div>
+            <div class="chat-input-row">
+                <input type="text" id="ui-chat-input" class="chat-input-field" placeholder="Напишіть повідомлення бобрам..." maxlength="150">
+                <button class="chat-send-btn" onclick="sendChatMessage()">ОТПРАВИТЬ</button>
+            </div>
+        </div>
+
+        <!-- СЕКЦІЯ 9: ІНВЕНТАР -->
+        <div class="section-block">
+            <div class="section-title">🎒 Твій Бобровий Інвентар</div>
+            <div class="inventory-layout">
+                <div class="inv-row" id="ui-inv-passport-row">
+                    <span class="inv-label">Наявність Паспорта:</span>
+                    <span class="inv-value" id="ui-inv-passport">Відсутній</span>
+                </div>
+                <div class="inv-row">
+                    <span class="inv-label">Нерухоме майно:</span>
+                    <span class="inv-value" id="ui-inv-property">Немає майна</span>
+                </div>
+                <div class="inv-row">
+                    <span class="inv-label">Куплені Акції WOOD:</span>
+                    <span class="inv-value" id="ui-inv-stocks">0 шт.</span>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <div id="collider-sec" class="container hidden bank-section collider-box">
-        <h2>💥 Бобровий Коллайдер Магнатів</h2>
-        <button onclick="buyAntimatter()">💥 КУПИТИ АНТИМАТЕРІЮ (1 МЛРД $)</button>
-    </div>
-
-    <div class="easter-egg-tag" onclick="triggerEasterEgg()">v2.2.1-BoberBuild</div>
-
+    <!-- ==========================================================================
+       14. ЯДРО СКРИПТІВ ТА ЛОГІКИ (JAVASCRIPT ENGINE)
+       ========================================================================== -->
     <script>
-        // Ініціалізація клієнта Supabase
+        // Конфігурація підключення до Supabase
         const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
         const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
-        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Глобальні змінні стану гри
-        let currentGlobalUser = "";
-        let currentGlobalMoney = 0.0;
-        let currentGlobalDebt = 0.0;
-        let currentGlobalCoins = 0;
-        let hasPassport = false;
-        let itemInDelivery = "";
-        let ownedItemsList = "";
-        let base64ImageString = "";
-        let selectedProduct = "";
-        let selectedPrice = 0;
-        let lastReloadTrigger = null;
-        let cryptoRate = 10.00;
-        let barberClicksLeft = 15;
+        // Глобальні змінні користувача та стану гри
+        let userLogin = "Гість";
+        let cashBalance = 0.00;
+        let coinBalance = 0;
+        let debtBalance = 0.00;
+        let ownedStocksCount = 0;
+        
+        let musicActive = false;
+        let barberRemainingClicks = 15;
+        let currentStockMarketPrice = 50.00;
+        let priceHistoryArr = [50, 48, 52, 51, 55, 53, 50, 52, 54, 56]; // для графіка
+        
+        let initialAdminSignalReceived = false;
+        let lastForcedReloadId = null;
 
-        // --- ⚡ СИСТЕМА REALTIME-СИНХРОНІЗАЦІЇ ⚡ ---
-        function connectRealtimeChannels() {
-            // 1. Моніторинг балансу в реальному часі
-            mySupabase
-                .channel('realtime_money')
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user_money', filter: `login=eq.${currentGlobalUser}` }, payload => {
-                    currentGlobalMoney = parseFloat(payload.new.money);
-                    currentGlobalCoins = parseInt(payload.new.bobr_coins || 0);
-                    document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
-                    document.getElementById('user-coin-display').innerText = currentGlobalCoins;
-                    updateStatusText();
-                })
-                .subscribe();
-
-            // 2. Моніторинг нових повідомлень чату
-            mySupabase
-                .channel('realtime_chat')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bober_chat' }, payload => {
-                    appendSingleMessage(payload.new);
-                })
-                .subscribe();
-
-            // 3. Зв'язок із панеллю адміна / Управління кешем та перезавантаженням
-            mySupabase
-                .channel('realtime_admin')
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'system_status', filter: 'id=eq.1' }, payload => {
-                    const status = payload.new;
-                    document.getElementById('admin-global-alert').style.display = status.maintenance_alert ? 'block' : 'none';
-                    
-                    if (lastReloadTrigger !== null && status.force_reload_trigger !== lastReloadTrigger) {
-                        // Робимо перезавантаження зі збиттям кешу через Query String маркери версії
-                        window.location.href = window.location.pathname + '?refresh=' + status.force_reload_trigger;
-                    }
-                    lastReloadTrigger = status.force_reload_trigger;
-                })
-                .subscribe();
-        }
-
-        // Перевірка банера адміна при початковому завантаженні
-        async function initSystemCheck() {
-            const { data } = await mySupabase.from('system_status').select('*').eq('id', 1);
-            if (data && data.length > 0) {
-                document.getElementById('admin-global-alert').style.display = data[0].maintenance_alert ? 'block' : 'none';
-                lastReloadTrigger = data[0].force_reload_trigger;
-            }
-        }
-        initSystemCheck();
-
-        // Перемикання вікон входу та реєстрації
-        function toggleForms(target) {
-            if (target === 'login') {
-                document.getElementById('register-box').classList.add('hidden');
-                document.getElementById('login-box').classList.remove('hidden');
-            } else {
-                document.getElementById('login-box').classList.add('hidden');
-                document.getElementById('register-box').classList.remove('hidden');
-            }
-        }
-
-        // Керування бічним меню
-        function toggleSidebar(open) {
-            if(open) document.getElementById('sidebar').classList.add('active');
-            else document.getElementById('sidebar').classList.remove('active');
-        }
-
-        // Навігація по розділах сайту
-        function showSection(sectionId) {
-            document.querySelectorAll('.bank-section').forEach(sec => sec.classList.add('hidden'));
-            document.getElementById(sectionId).classList.remove('hidden');
+        // Ініціалізація та авторизація через спливаюче вікно
+        function initAppSession() {
+            let promptName = prompt("Введіть свій логін у BOBER-BANK:") || "Юзер";
+            userLogin = promptName.trim().replace(/[^a-zA-Z0-9_а-яА-ЯіїєІЇЄ]/g, "");
+            if(!userLogin) userLogin = "Бобер_" + Math.floor(Math.random() * 900);
             
-            if (sectionId === 'shop-sec') {
-                if (itemInDelivery) {
-                    document.getElementById('shop-items-container').classList.add('hidden');
-                    document.getElementById('shop-status-message').innerHTML = `📦 У тебе їде вантаж: <b>${itemInDelivery}</b>. Чекаємо!`;
+            document.getElementById('ui-card-number').innerText = userLogin.toUpperCase() + "-BANK-ID";
+            
+            // Навішуємо клікер через JS для надійності
+            document.getElementById('click-trigger-element').addEventListener('click', processClickerAction);
+            
+            // Навішуємо перукарню
+            document.getElementById('ui-barber-img').addEventListener('click', processBarberClick);
+
+            // Обробка відправки повідомлення чату по кнопці Enter
+            document.getElementById('ui-chat-input').addEventListener('keydown', function(e) {
+                if(e.key === 'Enter') sendChatMessage();
+            });
+
+            // Завантажуємо базові дані
+            synchronizeCloudStorage();
+            
+            // Запускаємо внутрішні лісові таймери
+            startInternalClockCycles();
+            
+            // Завантажуємо чат
+            fetchChatHistory();
+            
+            // Підключаємо реальтайм канали
+            establishRealtimeWebsockets();
+        }
+
+        // Синхронізація з базою даних Supabase (Баланси, майно, борги)
+        async function synchronizeCloudStorage() {
+            try {
+                // 1. Завантаження грошей, монет, боргів та акцій
+                let { data: account, error: accErr } = await supabase
+                    .from('user_money')
+                    .select('*')
+                    .eq('login', userLogin)
+                    .single();
+
+                if (accErr || !account) {
+                    // Якщо користувача немає, створюємо початковий запис
+                    const newAccount = { 
+                        login: userLogin, 
+                        money: 100.00, 
+                        bobr_coins: 0,
+                        debt: 0.00,
+                        stocks: 0
+                    };
+                    await supabase.from('user_money').insert(newAccount);
+                    cashBalance = 100.00;
+                    coinBalance = 0;
+                    debtBalance = 0.00;
+                    ownedStocksCount = 0;
                 } else {
-                    document.getElementById('shop-items-container').classList.remove('hidden');
-                    document.getElementById('shop-delivery').classList.add('hidden');
-                    document.getElementById('shop-status-message').innerText = "";
+                    cashBalance = parseFloat(account.money) || 0.00;
+                    coinBalance = parseInt(account.bobr_coins) || 0;
+                    debtBalance = parseFloat(account.debt) || 0.00;
+                    // Перевірка на випадок відсутності стовпчика акцій у старій схемі
+                    ownedStocksCount = parseInt(account.stocks) || 0;
+                }
+
+                // 2. Завантаження майна
+                let { data: properties, error: propErr } = await supabase
+                    .from('stuff')
+                    .select('*')
+                    .eq('login', userLogin)
+                    .single();
+
+                if (propErr || !properties) {
+                    await supabase.from('stuff').insert({ login: userLogin, owned_items: "", has_passport: false });
+                    renderApplicationUI({ owned_items: "", has_passport: false });
+                } else {
+                    renderApplicationUI(properties);
+                }
+
+                // Ховаємо лоадер
+                closeLoadingScreen();
+
+            } catch (err) {
+                console.error("Помилка синхронізації:", err);
+                closeLoadingScreen();
+            }
+        }
+
+        // Оновлення текстових полів на екрані
+        function renderApplicationUI(stuffObject) {
+            document.getElementById('ui-balance-usd').innerText = cashBalance.toFixed(2);
+            document.getElementById('ui-balance-bb').innerText = coinBalance;
+            document.getElementById('ui-inv-stocks').innerText = ownedStocksCount + " шт.";
+
+            if(stuffObject) {
+                document.getElementById('ui-inv-property').innerText = stuffObject.owned_items || "Немає майна";
+                
+                if(stuffObject.has_passport) {
+                    document.getElementById('ui-inv-passport').innerText = "Є в наявності";
+                    document.getElementById('ui-inv-passport-row').classList.add('inv-row-active');
+                } else {
+                    document.getElementById('ui-inv-passport').innerText = "Відсутній";
+                    document.getElementById('ui-inv-passport-row').classList.remove('inv-row-active');
                 }
             }
-            if (sectionId === 'chat-sec') loadChatMessages();
-            if (sectionId === 'leaderboard-sec') loadLeaderboard();
-            if (sectionId === 'passport-sec') updatePassportUI();
-            toggleSidebar(false);
+
+            // Борги
+            const debtBanner = document.getElementById('ui-debt-banner');
+            if(debtBalance > 0) {
+                debtBanner.style.display = "block";
+                document.getElementById('ui-debt-display').innerText = `Борг: ${debtBalance.toFixed(2)} $ (+10% кожні 30 сек)`;
+            } else {
+                debtBanner.style.display = "none";
+            }
+
+            // Оновлення міні-графіка акцій
+            renderStockChart();
         }
 
-        // --- 💬 ЛОГІКА БОБРОВОГО ЧАТУ ---
-        async function loadChatMessages() {
-            const container = document.getElementById('chat-messages-container');
-            const { data } = await mySupabase.from('bober_chat').select('*').order('id', { ascending: false }).limit(30);
-            container.innerHTML = "";
-            if(data) {
-                data.reverse().forEach(msg => appendSingleMessage(msg));
+        function closeLoadingScreen() {
+            const screen = document.getElementById('loader-screen');
+            screen.style.opacity = '0';
+            setTimeout(() => {
+                screen.style.display = 'none';
+            }, 600);
+        }
+
+        // Керування музикою та басами
+        function handleMusicToggle() {
+            const player = document.getElementById('global-bass-player');
+            const label = document.getElementById('ui-music-status-label');
+
+            if(!musicActive) {
+                player.play().then(() => {
+                    musicActive = true;
+                    label.innerText = "УВМК (БАСИТЬ)";
+                    label.style.color = "var(--success-color)";
+                }).catch(() => {
+                    alert("Клацніть ще раз, браузер заблокував автоаудіо.");
+                });
+            } else {
+                player.pause();
+                musicActive = false;
+                label.innerText = "ВИМК";
+                label.style.color = "var(--danger-color)";
             }
         }
 
-        function appendSingleMessage(msg) {
-            const container = document.getElementById('chat-messages-container');
-            if (!container) return;
-            const row = document.createElement('div');
-            row.classList.add('chat-msg-row');
-            let imgTag = msg.image_url ? `<img src="${msg.image_url}" class="chat-msg-img">` : "";
-            row.innerHTML = `<div class="chat-msg-user">🦫 user_${msg.login}:</div><div>${msg.message}</div>${imgTag}`;
-            container.appendChild(row);
+        // ==========================================================================
+        // КЛІКЕР ТА ПЕРУКАРНЯ ЛІСУ
+        // ==========================================================================
+        async function processClickerAction(event) {
+            cashBalance += 1.50;
+            document.getElementById('ui-balance-usd').innerText = cashBalance.toFixed(2);
+
+            // Створення вилітаючого тексту цифр заробітку
+            const clickBox = document.querySelector('.clicker-box');
+            const rect = clickBox.getBoundingClientRect();
+            
+            const floating = document.createElement('div');
+            floating.className = 'floating-text';
+            floating.innerText = '+1.50$';
+            
+            // Позиціонування відносно кліку або центру
+            let x = event.clientX - rect.left || 70;
+            let y = event.clientY - rect.top || 70;
+            
+            floating.style.left = x + 'px';
+            floating.style.top = y + 'px';
+            
+            clickBox.appendChild(floating);
+            setTimeout(() => floating.remove(), 600);
+
+            // Оновлюємо баланс у хмарі
+            await supabase.from('user_money').update({ money: cashBalance }).eq('login', userLogin);
+        }
+
+        async function processBarberClick() {
+            if(barberRemainingClicks <= 0) return;
+
+            barberRemainingClicks--;
+            const label = document.getElementById('ui-barber-status');
+            const image = document.getElementById('ui-barber-img');
+
+            label.innerText = `Залишилося зрізати: ${barberRemainingClicks} жмутів шерсті`;
+
+            if(barberRemainingClicks === 0) {
+                // Перемикаємо зображення на підстриженого
+                image.src = "cutted.png";
+                label.innerText = "✂ Бобер поголений! Справжня модель лісу.";
+                
+                cashBalance += 5.00;
+                document.getElementById('ui-balance-usd').innerText = cashBalance.toFixed(2);
+                
+                await supabase.from('user_money').update({ money: cashBalance }).eq('login', userLogin);
+                alert("💈 Перукарня успішно обслужила клієнта! Твій заробіток: +5.00 $");
+
+                // Через 7 секунд бобер знову заростає
+                setTimeout(() => {
+                    barberRemainingClicks = 15;
+                    image.src = "nocut.png";
+                    label.innerText = "Залишилося зрізати: 15 жмутів шерсті";
+                }, 7000);
+            }
+        }
+
+        // ==========================================================================
+        // КАЗИНО ТРИ СОКИРИ
+        // ==========================================================================
+        async function executeCasinoSpin() {
+            const betInput = document.getElementById('ui-casino-bet');
+            let betAmount = parseFloat(betInput.value) || 0;
+
+            if(betAmount < 5) {
+                alert("❌ Мінімальна ставка в казино становить 5 $");
+                return;
+            }
+            if(cashBalance < betAmount) {
+                alert("❌ У тебе немає стільки готівки! Попрацюй на лісоповалі.");
+                return;
+            }
+
+            cashBalance -= betAmount;
+            document.getElementById('ui-balance-usd').innerText = cashBalance.toFixed(2);
+            await supabase.from('user_money').update({ money: cashBalance }).eq('login', userLogin);
+
+            const screen = document.getElementById('ui-casino-display');
+            screen.innerText = "⚡ КРУТИМО... ⚡";
+
+            // Анімація слотів
+            let counter = 0;
+            const symbols = ["🪵", "🪓", "🪙", "💎", "🍒"];
+            let interval = setInterval(() => {
+                let s1 = symbols[Math.floor(Math.random() * symbols.length)];
+                let s2 = symbols[Math.floor(Math.random() * symbols.length)];
+                let s3 = symbols[Math.floor(Math.random() * symbols.length)];
+                screen.innerText = `${s1} | ${s2} | ${s3}`;
+                counter++;
+                if(counter > 8) {
+                    clearInterval(interval);
+                    determineCasinoResult(betAmount);
+                }
+            }, 100);
+        }
+
+        async function determineCasinoResult(bet) {
+            const screen = document.getElementById('ui-casino-display');
+            const roll = Math.random();
+
+            if (roll > 0.75) {
+                // Джекпот
+                let prizeCoins = Math.floor(Math.random() * 6) + 2;
+                coinBalance += prizeCoins;
+                let cashPrize = bet * 3;
+                cashBalance += cashPrize;
+
+                screen.innerText = `💎 ДЖЕКПОТ: +${cashPrize}$ & +${prizeCoins}BB!`;
+                alert(`🎉 Оце фарт! Комбінація Діамантів! Виграш: ${cashPrize}$ та ${prizeCoins} BobrCoins!`);
+            } else if (roll > 0.45) {
+                // Звичайний виграш
+                let cashPrize = Math.floor(bet * 1.5);
+                cashBalance += cashPrize;
+                screen.innerText = `🪵 ВИГРАШ: +${cashPrize} $`;
+            } else {
+                // Програш
+                screen.innerText = "❌ ПРОГРАШ! СПРОБУЙ ЩЕ";
+            }
+
+            // Фіксуємо у базі дані
+            await supabase.from('user_money').update({ money: cashBalance, bobr_coins: coinBalance }).eq('login', userLogin);
+            forceUIRefreshWithoutCloud();
+        }
+
+        function forceUIRefreshWithoutCloud() {
+            document.getElementById('ui-balance-usd').innerText = cashBalance.toFixed(2);
+            document.getElementById('ui-balance-bb').innerText = coinBalance;
+            document.getElementById('ui-inv-stocks').innerText = ownedStocksCount + " шт.";
+            if(debtBalance > 0) {
+                document.getElementById('ui-debt-banner').style.display = "block";
+                document.getElementById('ui-debt-display').innerText = `Борг: ${debtBalance.toFixed(2)} $ (+10% кожні 30 сек)`;
+            } else {
+                document.getElementById('ui-debt-banner').style.display = "none";
+            }
+        }
+
+        // ==========================================================================
+        // БОБРОВА ФОНДОВА БІРЖА
+        // ==========================================================================
+        function renderStockChart() {
+            const container = document.getElementById('ui-mini-chart');
+            container.innerHTML = "";
+            
+            let maxPrice = Math.max(...priceHistoryArr);
+            
+            priceHistoryArr.forEach(price => {
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                // Вираховуємо висоту у відсотках
+                let heightPercent = (price / maxPrice) * 100;
+                bar.style.height = heightPercent + '%';
+                
+                if(priceHistoryArr[priceHistoryArr.length-1] >= priceHistoryArr[priceHistoryArr.length-2]) {
+                    bar.style.backgroundColor = "var(--success-color)";
+                } else {
+                    bar.style.backgroundColor = "var(--danger-color)";
+                }
+                container.appendChild(bar);
+            });
+        }
+
+        async function buyStockShare() {
+            if(cashBalance < currentStockMarketPrice) {
+                alert("❌ Недостатньо готівки для покупки акції деревообробки!");
+                return;
+            }
+
+            cashBalance -= currentStockMarketPrice;
+            ownedStocksCount++;
+            
+            forceUIRefreshWithoutCloud();
+            
+            await supabase.from('user_money').update({ 
+                money: cashBalance,
+                stocks: ownedStocksCount
+            }).eq('login', userLogin);
+
+            alert(`📈 Куплено 1 акцію WOOD за ціною ${currentStockMarketPrice.toFixed(2)} $`);
+        }
+
+        async function sellStockShare() {
+            if(ownedStocksCount <= 0) {
+                alert("❌ У тебе немає акцій на продаж!");
+                return;
+            }
+
+            cashBalance += currentStockMarketPrice;
+            ownedStocksCount--;
+            
+            forceUIRefreshWithoutCloud();
+
+            await supabase.from('user_money').update({ 
+                money: cashBalance,
+                stocks: ownedStocksCount
+            }).eq('login', userLogin);
+
+            alert(`📉 Продано 1 акцію WOOD за ціною ${currentStockMarketPrice.toFixed(2)} $`);
+        }
+
+        // ==========================================================================
+        // СИСТЕМА КРЕДИТІВ ТА НАРАХУВАННЯ ПЕНІ
+        // ==========================================================================
+        async function takeBankLoan() {
+            if(debtBalance > 0) {
+                alert("❌ Ти не можеш взяти новий кредит, доки не погасиш старий борг!");
+                return;
+            }
+
+            debtBalance = 200.00;
+            cashBalance += 200.00;
+            
+            forceUIRefreshWithoutCloud();
+
+            await supabase.from('user_money').update({ 
+                money: cashBalance,
+                debt: debtBalance
+            }).eq('login', userLogin);
+
+            alert("🏦 Банк нарахував тобі 200.00 $ кредиту. Уважно слідкуй за часом, щоб відсотки не з'їли твій баланс!");
+        }
+
+        async function payBankLoan() {
+            if(debtBalance <= 0) {
+                alert("👍 У тебе немає жодних боргів перед лісництвом!");
+                return;
+            }
+
+            if(cashBalance < debtBalance) {
+                alert(`❌ Не вистачає грошей! Тобі потрібно ${debtBalance.toFixed(2)} $, щоб повністю закрити борг.`);
+                return;
+            }
+
+            cashBalance -= debtBalance;
+            debtBalance = 0.00;
+
+            forceUIRefreshWithoutCloud();
+
+            await supabase.from('user_money').update({ 
+                money: cashBalance,
+                debt: debtBalance
+            }).eq('login', userLogin);
+
+            alert("🎉 Вітаємо! Твій кредит повністю закритий, совість чиста.");
+        }
+
+        // ==========================================================================
+        // МАГАЗИН ТА КУПІВЛЯ ПАСПОРТІВ
+        // ==========================================================================
+        async function purchaseProperty(itemName, price) {
+            if(cashBalance < price) {
+                alert("❌ Тобі бракує баксів на купівлю цієї нерухомості!");
+                return;
+            }
+
+            cashBalance -= price;
+            
+            let { data } = await supabase.from('stuff').select('owned_items').eq('login', userLogin).single();
+            let arr = data?.owned_items ? data.owned_items.split(',') : [];
+            arr.push(itemName);
+            let updatedItemsStr = arr.filter(Boolean).join(',');
+
+            await supabase.from('user_money').update({ money: cashBalance }).eq('login', userLogin);
+            await supabase.from('stuff').update({ owned_items: updatedItemsStr }).eq('login', userLogin);
+
+            alert(`🎉 Майно успішно оформлено! Предмет [${itemName}] додано до твого інвентарю.`);
+            synchronizeCloudStorage();
+        }
+
+        async function purchasePassport(price) {
+            if(cashBalance < price) {
+                alert("❌ Брак грошей на оформлення офіційного паспорта.");
+                return;
+            }
+
+            cashBalance -= price;
+
+            await supabase.from('user_money').update({ money: cashBalance }).eq('login', userLogin);
+            await supabase.from('stuff').update({ has_passport: true }).eq('login', userLogin);
+
+            alert("🪪 Вітаємо! Ти отримав чистий офіційний Державний Паспорт Лісу.");
+            synchronizeCloudStorage();
+        }
+
+        // ==========================================================================
+        // СИСТЕМА ЧАТУ (FETCH & SEND)
+        // ==========================================================================
+        async function fetchChatHistory() {
+            try {
+                let { data: messages, error } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .order('id', { ascending: true })
+                    .limit(40);
+
+                if(!error && messages) {
+                    const container = document.getElementById('ui-chat-container');
+                    container.innerHTML = "";
+                    messages.forEach(msg => {
+                        appendMessageToDOM(msg.author, msg.text);
+                    });
+                    scrollChatToBottom();
+                }
+            } catch (e) {
+                console.log("Помилка завантаження повідомлень чату");
+            }
+        }
+
+        function appendMessageToDOM(author, text) {
+            const container = document.getElementById('ui-chat-container');
+            const div = document.createElement('div');
+            div.className = 'chat-msg';
+            
+            const spanAuthor = document.createElement('span');
+            spanAuthor.className = 'chat-msg-author';
+            spanAuthor.innerText = author + ":";
+            
+            const spanText = document.createElement('span');
+            spanText.className = 'chat-msg-text';
+            spanText.innerText = text;
+
+            div.appendChild(spanAuthor);
+            div.appendChild(spanText);
+            container.appendChild(div);
+        }
+
+        function scrollChatToBottom() {
+            const container = document.getElementById('ui-chat-container');
             container.scrollTop = container.scrollHeight;
         }
 
-        function handleFileAsBase64(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                base64ImageString = reader.result;
-                document.getElementById('file-status-label').style.display = "block";
-            };
-            reader.readAsDataURL(file);
-        }
-
         async function sendChatMessage() {
-            const text = document.getElementById('chat-msg-input').value.trim();
-            const url = document.getElementById('chat-img-url').value.trim();
-            let finalImg = base64ImageString ? base64ImageString : url;
-            if(!text && !finalImg) return;
+            const input = document.getElementById('ui-chat-input');
+            let text = input.value.trim();
+            if(!text) return;
 
-            await mySupabase.from('bober_chat').insert([{ login: currentGlobalUser, message: text ? text : "🪵 Фото греблі", image_url: finalImg }]);
-            document.getElementById('chat-msg-input').value = "";
-            document.getElementById('chat-img-url').value = "";
-            base64ImageString = "";
-            document.getElementById('file-status-label').style.display = "none";
-        }
+            input.value = "";
 
-        // --- 🛒 ФУНКЦІЇ МАГАЗИНУ (ПОВЕРНЕННЯ В МЕНЮ МАГАЗИНУ) ---
-        async function buyProduct(name, price) {
-            if (currentGlobalMoney < price) { alert("Мало баксів!"); return; }
-            if (itemInDelivery) { alert("Зачекай минулу доставку!"); return; }
+            // Записуємо в Supabase таблицу 'messages'
+            const { error } = await supabase.from('messages').insert({
+                author: userLogin,
+                text: text
+            });
 
-            selectedProduct = name;
-            selectedPrice = price;
-
-            document.getElementById('shop-items-container').classList.add('hidden');
-            document.getElementById('shop-loading').classList.remove('hidden');
-
-            setTimeout(async () => {
-                currentGlobalMoney -= selectedPrice;
-                itemInDelivery = selectedProduct;
-
-                await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney });
-                await mySupabase.from('stuff').upsert({ login: currentGlobalUser, in_delivery: itemInDelivery });
-
-                document.getElementById('shop-loading').classList.add('hidden');
-                document.getElementById('shop-delivery').classList.remove('hidden');
-                document.getElementById('delivery-item-name').innerText = selectedProduct;
-            }, 1500);
-        }
-
-        async function buyPassportItem() {
-            if (currentGlobalMoney < 1000) { alert("У тебе немає 1000$! Ти ще не готовий стати громадянином."); return; }
-            if (hasPassport) { alert("У тебе вже є паспорт!"); return; }
-
-            currentGlobalMoney -= 1000;
-            hasPassport = true;
-
-            await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney });
-            await mySupabase.from('stuff').upsert({ login: currentGlobalUser, has_passport: true });
-
-            document.getElementById('menu-passport-item').classList.remove('hidden');
-            alert("🪪 Вітаємо! Державний паспорт Бобра оформлено! Перевірь бічне меню.");
-        }
-
-        async function confirmDelivery() {
-            const method = document.getElementById('delivery-method').value;
-            
-            let currentItems = ownedItemsList ? ownedItemsList.split(',') : [];
-            currentItems.push(selectedProduct);
-            ownedItemsList = currentItems.join(',');
-
-            itemInDelivery = ""; 
-
-            await mySupabase.from('stuff').upsert({ login: currentGlobalUser, in_delivery: "", owned_items: ownedItemsList });
-            updateInventoryUI();
-
-            // Повертаємо користувача назад до списку товарів магазину!
-            document.getElementById('shop-delivery').classList.add('hidden');
-            document.getElementById('shop-items-container').classList.remove('hidden');
-            document.getElementById('shop-status-message').innerHTML = `<span style="color:#4edf7a">✔ Товар успішно доставлений компанією "${method}" у твій інвентар!</span>`;
-            
-            if (currentItems.length >= 7) {
-                document.getElementById('menu-collider-item').classList.remove('hidden');
+            if(error) {
+                console.error("Помилка надсилання:", error);
             }
         }
 
-        function updateInventoryUI() {
-            document.getElementById('inv-items-list').innerText = ownedItemsList ? ownedItemsList.replace(/,/g, ', ') : "Нічого немає";
-        }
-
-        // --- 🔨 ДЕРЖАВНИЙ ЛІСОПОВАЛ (КЛІКЕР) ---
-        async function clickBeaver() {
-            currentGlobalMoney += 0.10;
-            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
-            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
-            updateStatusText();
-            await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney });
-        }
-
-        function updateStatusText() {
-            const txt = document.querySelector('.bomzh-text');
-            if(!txt) return;
-            if(currentGlobalMoney >= 1000) { txt.innerText = "Олігарх лісу! 👑"; txt.style.color="#4edf7a"; }
-            else if(currentGlobalMoney < 5) { txt.innerText = "Ну ти й бомж..."; txt.style.color="red"; }
-            else { txt.innerText = "Солідний бобер 🪵"; txt.style.color="#ff9f1c"; }
-        }
-
-        // --- 💳 ЗАМОВЛЕННЯ VIP ПЛАСТИКУ ---
-        function startCardOrdering() {
-            document.getElementById('buy-btn').classList.add('hidden');
-            document.getElementById('loading-section').classList.remove('hidden');
-            
-            setTimeout(() => {
-                document.getElementById('loading-section').classList.add('hidden');
-                document.getElementById('status-message').innerText = "✔ Пластик успішно виготовлено та надіслано кур'єром на твою греблю!";
-                document.getElementById('status-message').style.color = "#4edf7a";
-            }, 4000);
-        }
-
-        // --- 💸 МІЖНАРОДНІ ПЕРЕКАЗИ ---
-        async function sendMoneyTransaction() {
-            const target = document.getElementById('transfer-target').value.trim();
-            const amount = parseFloat(document.getElementById('transfer-amount').value);
-            const msgStatus = document.getElementById('transfer-status-message');
-
-            if(!target || isNaN(amount) || amount <= 0 || target === currentGlobalUser) {
-                msgStatus.innerText = "❌ Некоректні дані переказу!";
-                msgStatus.style.color = "red";
-                return;
-            }
-            if(currentGlobalMoney < amount) {
-                msgStatus.innerText = "❌ Мало баксів на рахунку!";
-                msgStatus.style.color = "red";
-                return;
-            }
-
-            const { data } = await mySupabase.from('user_money').select('*').eq('login', target);
-            if(!data || data.length === 0) {
-                msgStatus.innerText = "❌ Бобра з таким логіном не існує!";
-                msgStatus.style.color = "red";
-                return;
-            }
-
-            currentGlobalMoney -= amount;
-            let targetNewMoney = parseFloat(data[0].money) + amount;
-
-            await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney });
-            await mySupabase.from('user_money').upsert({ login: target, money: targetNewMoney });
-            
-            msgStatus.innerText = `✔ Успішно надіслано ${amount}$ для ${target}!`;
-            msgStatus.style.color = "#4edf7a";
-            document.getElementById('transfer-amount').value = "";
-        }
-
-        // --- 💈 ПЕРУКАРНЯ БОБРА ---
-        function clickBarberBober() {
-            const img = document.getElementById('barber-bober-img');
-            barberClicksLeft--;
-            document.getElementById('clicks-left-display').innerText = `Залишилося зрізати: ${barberClicksLeft} жмутів`;
-
-            if (barberClicksLeft <= 0) {
-                img.src = "cut.png";
-                document.getElementById('clicks-left-display').innerText = "✂ Бобер повністю поголений! Справжня краса.";
-                alert("💈 Ти поголив бобра! +5$ за роботу перукаря.");
-                currentGlobalMoney += 5.00;
-                mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney });
-                barberClicksLeft = 15; 
-            }
-        }
-
-        // --- 🎰 БОБРОВИЙ КАЗІК (З ПОВНИМИ ЕФЕКТАМИ ОБЕРТАННЯ) ---
-        async function playCasinoSlots() {
-            const betInput = document.getElementById('casino-bet').value;
-            const bet = parseFloat(betInput);
-            const msg = document.getElementById('casino-status-message');
-            const spinBtn = document.getElementById('spin-btn');
-
-            if (isNaN(bet) || bet <= 0 || bet > currentGlobalMoney) {
-                msg.innerText = "❌ Невірна ставка або мало баксів!";
-                msg.style.color = "red";
-                return;
-            }
-
-            currentGlobalMoney -= bet;
-            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
-            msg.innerText = "🎰 Барабани крутяться...";
-            msg.style.color = "#ff9f1c";
-            
-            spinBtn.disabled = true;
-
-            // Додаємо CSS класи обертання
-            const s1Box = document.getElementById('slot-1');
-            const s2Box = document.getElementById('slot-2');
-            const s3Box = document.getElementById('slot-3');
-            s1Box.classList.add('slot-spinning');
-            s2Box.classList.add('slot-spinning');
-            s3Box.classList.add('slot-spinning');
-
-            setTimeout(async () => {
-                s1Box.classList.remove('slot-spinning');
-                s2Box.classList.remove('slot-spinning');
-                s3Box.classList.remove('slot-spinning');
-                spinBtn.disabled = false;
-
-                const emojis = ["🪵", "🌲", "🐟", "💎", "🦫"];
-                const s1 = emojis[Math.floor(Math.random() * emojis.length)];
-                const s2 = emojis[Math.floor(Math.random() * emojis.length)];
-                const s3 = emojis[Math.floor(Math.random() * emojis.length)];
-
-                s1Box.innerText = s1;
-                s2Box.innerText = s2;
-                s3Box.innerText = s3;
-
-                if (s1 === s2 && s2 === s3) {
-                    let win = bet * 10;
-                    if (s1 === "🦫") win = bet * 50; 
-                    currentGlobalMoney += win;
-                    msg.innerText = `🎰 ДЖЕКПОТ! Ви виграли ${win.toFixed(2)}$ !!!`;
-                    msg.style.color = "#4edf7a";
-                } else if (s1 === s2 || s2 === s3 || s1 === s3) {
-                    let win = bet * 2;
-                    currentGlobalMoney += win;
-                    msg.innerText = `💵 Напів-перемога! Повернення х2: виграно ${win.toFixed(2)}$`;
-                    msg.style.color = "#ff9f1c";
-                } else {
-                    msg.innerText = "😭 Слоти покрутилися невдало... Спробуй ще!";
-                    msg.style.color = "#ff4d4d";
-                }
-
-                await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney });
-            }, 1000);
-        }
-
-        // --- 🏆 ЛІДЕРБОРД ---
-        async function loadLeaderboard() {
-            const container = document.getElementById('leaderboard-container');
-            container.innerHTML = "Завантаження списку олігархів... ⏳";
-
-            const { data } = await mySupabase.from('user_money').select('*').order('money', { ascending: false }).limit(10);
-            
-            if(data) {
-                container.innerHTML = "";
-                data.forEach((user, index) => {
-                    const row = document.createElement('div');
-                    row.classList.add('leader-row');
-                    row.innerHTML = `<div><b>${index + 1}.</b> user_${user.login}</div><div class="leader-money">${parseFloat(user.money).toFixed(2)} $</div>`;
-                    container.appendChild(row);
-                });
-            }
-        }
-
-        // --- 🚨 КРЕДИТНА СИСТЕМА ---
-        function takeBoberCredit(amount) {
-            currentGlobalMoney += amount;
-            currentGlobalDebt += amount;
-            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
-            document.getElementById('current-debt-display').innerText = currentGlobalDebt.toFixed(2);
-            document.getElementById('debt-alert-box').classList.remove('hidden');
-
-            mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney });
-
+        // ==========================================================================
+        // ЦИКЛІЧНІ ТАЙМЕРИ ТА ГЕНЕРАЦІЯ КУРСІВ (INTERNAL GAME LOOPS)
+        // ==========================================================================
+        function startInternalClockCycles() {
+            // 1. Кожні 12 секунд змінюється курс акцій на біржі
             setInterval(() => {
-                if (currentGlobalDebt > 0) {
-                    currentGlobalDebt = currentGlobalDebt * 1.05;
-                    document.getElementById('current-debt-display').innerText = currentGlobalDebt.toFixed(2);
-                }
-            }, 10000);
-        }
-
-        // --- 📈 ГЛОБАЛЬНА БІРЖА КРИПТИ ---
-        setInterval(() => {
-            let change = (Math.random() * 4 - 2); 
-            cryptoRate = Math.max(1.00, cryptoRate + change);
-            const el = document.getElementById('crypto-rate-display');
-            if(el) el.innerText = cryptoRate.toFixed(2);
-        }, 4000);
-
-        async function tradeCrypto(type) {
-            const amount = parseInt(document.getElementById('crypto-amount').value);
-            const msg = document.getElementById('crypto-status-message');
-
-            if (isNaN(amount) || amount <= 0) { alert("Введіть нормальну кількість!"); return; }
-
-            if (type === 'buy') {
-                let cost = amount * cryptoRate;
-                if (currentGlobalMoney < cost) { msg.innerText = "❌ Недостатньо грошей для покупки!"; msg.style.color="red"; return; }
-                currentGlobalMoney -= cost;
-                currentGlobalCoins += amount;
-            } else {
-                if (currentGlobalCoins < amount) { msg.innerText = "❌ У тебе немає стільки коїнів!"; msg.style.color="red"; return; }
-                let gain = amount * cryptoRate;
-                currentGlobalMoney += gain;
-                currentGlobalCoins -= amount;
-            }
-
-            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
-            document.getElementById('user-coin-display').innerText = currentGlobalCoins;
-            msg.innerText = "📈 Операцію на біржі успішно проведено!";
-            msg.style.color = "#4edf7a";
-
-            await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney, bobr_coins: currentGlobalCoins });
-        }
-
-        // --- 🪪 ОНОВЛЕННЯ ПАСПОРТУ ТА КОЛЛАЙДЕРУ ---
-        function updatePassportUI() {
-            document.getElementById('pass-name').innerText = "Бобер_" + currentGlobalUser;
-            document.getElementById('pass-cash').innerText = currentGlobalMoney.toFixed(2) + " $";
-        }
-
-        function buyAntimatter() {
-            if (currentGlobalMoney < 1000000000) {
-                alert("❌ У тебе немає 1 МІЛЬЯРДА доларів! Твій коллайдер вибухнув від бідності.");
-            } else {
-                alert("💥 БУУУУМ! Ти купив антиматерію! Ліс знищено антиматерією, ти виграв це життя.");
-            }
-        }
-
-        // --- 🔐 РЕЄСТРАЦІЯ ТА ВХІД КОРИСТУВАЧІВ ---
-        async function registerUser() {
-            const l = document.getElementById('reg-login').value.trim();
-            const p = document.getElementById('reg-password').value.trim();
-            if(!l || !p) return;
-            
-            const { error } = await mySupabase.from('passcodes').insert([{ login: l, password: p }]);
-            if(!error) {
-                await mySupabase.from('user_money').insert([{ login: l, money: 0.00, bobr_coins: 0 }]);
-                await mySupabase.from('stuff').insert([{ login: l, has_passport: false, in_delivery: "", owned_items: "" }]);
-                alert("🚀 Акаунт бобра успішно створено! Тепер увійдіть через форму входу.");
-                toggleForms('login');
-            } else {
-                alert("Помилка реєстрації: можливо цей логін уже зайнятий шпигунами!");
-            }
-        }
-
-        async function loginUser() {
-            const l = document.getElementById('login-username').value.trim();
-            const p = document.getElementById('login-password').value.trim();
-            
-            const { data } = await mySupabase.from('passcodes').select('*').eq('login', l).eq('password', p);
-            if(data && data.length > 0) {
-                currentGlobalUser = l;
-                document.body.classList.add('logged-in');
-                document.getElementById('main-header').classList.add('logged-in-header');
-                document.getElementById('menu-trigger').classList.remove('hidden');
-                document.getElementById('header-title').innerText = `🦫 БОБЕР-БАНК (Юзер: ${l})`;
+                let changePercent = (Math.random() * 20 - 10); // від -10% до +10%
+                let oldPrice = currentStockMarketPrice;
+                currentStockMarketPrice += (currentStockMarketPrice * (changePercent / 100));
                 
-                // Стягуємо баланс та крипту
-                const { data: mData } = await mySupabase.from('user_money').select('*').eq('login', l);
-                if(mData && mData.length > 0) {
-                    currentGlobalMoney = parseFloat(mData[0].money);
-                    currentGlobalCoins = parseInt(mData[0].bobr_coins || 0);
-                }
+                if(currentStockMarketPrice < 5) currentStockMarketPrice = 5; // захист від знецінення
                 
-                // Стягуємо майно
-                const { data: sData } = await mySupabase.from('stuff').select('*').eq('login', l);
-                if(sData && sData.length > 0) {
-                    hasPassport = sData[0].has_passport;
-                    itemInDelivery = sData[0].in_delivery;
-                    ownedItemsList = sData[0].owned_items || "";
-                    
-                    if (hasPassport) document.getElementById('menu-passport-item').classList.remove('hidden');
-                    
-                    let itemsCheck = ownedItemsList ? ownedItemsList.split(',') : [];
-                    if (itemsCheck.length >= 7) document.getElementById('menu-collider-item').classList.remove('hidden');
+                priceHistoryArr.push(Math.round(currentStockMarketPrice));
+                if(priceHistoryArr.length > 15) priceHistoryArr.shift(); // ліміт довжини графіка
+
+                // Рендеримо зміни
+                const trendUI = document.getElementById('ui-stock-trend');
+                document.getElementById('ui-stock-price').innerText = currentStockMarketPrice.toFixed(2) + " $";
+                
+                if(changePercent >= 0) {
+                    trendUI.innerText = `+${changePercent.toFixed(2)}%`;
+                    trendUI.className = "stock-trend trend-up";
+                } else {
+                    trendUI.innerText = `${changePercent.toFixed(2)}%`;
+                    trendUI.className = "stock-trend trend-down";
                 }
 
-                document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
-                document.getElementById('user-coin-display').innerText = currentGlobalCoins;
-                updateInventoryUI();
-                updateStatusText();
+                renderStockChart();
+            }, 12000);
 
-                document.getElementById('login-box').classList.add('hidden');
-                showSection('balance-sec');
-                connectRealtimeChannels(); 
-            } else { 
-                alert("❌ Невірний логін або пароль бджолиного шпигуна!"); 
-            }
+            // 2. Кожні 30 секунд нараховуються 10% відсотків на борг (кредит), якщо він є
+            setInterval(async () => {
+                if(debtBalance > 0) {
+                    let interest = debtBalance * 0.10;
+                    debtBalance += interest;
+                    
+                    forceUIRefreshWithoutCloud();
+                    
+                    // Зберігаємо оновлений борг у Supabase
+                    await supabase.from('user_money').update({ debt: debtBalance }).eq('login', userLogin);
+                }
+            }, 30000);
         }
 
-        function triggerEasterEgg() {
-            currentGlobalMoney += 201;
-            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
-            updateStatusText();
-            alert("🌲 Знайдено секретний бобровий схрон! Нараховано +201$");
+        // ==========================================================================
+        // РЕАЛТАЙМ СИНХРОНІЗАЦІЯ ЧЕРЕЗ ВЕБ-СОКЕТИ (REALTIME EVENTS)
+        // ==========================================================================
+        function establishRealtimeWebsockets() {
+            // Канал 1: Адмінські сигнали (Плашка тривоги та перезавантаження)
+            supabase.channel('admin_signals_v3')
+                .on('postgres_changes', { event: 'UPDATE', filter: 'id=eq.1', schema: 'public', table: 'system_status' }, payload => {
+                    const status = payload.new;
+                    
+                    // Керування відображенням плашки
+                    document.getElementById('maintenance-alert').style.display = status.maintenance_alert ? 'block' : 'none';
+                    
+                    // Force reload тригер
+                    if(initialAdminSignalReceived && lastForcedReloadId !== null && status.force_reload_trigger !== lastForcedReloadId) {
+                        window.location.reload();
+                    }
+                    
+                    lastForcedReloadId = status.force_reload_trigger;
+                    initialAdminSignalReceived = true;
+                })
+                .subscribe();
+
+            // Канал 2: Оновлення балансу (якщо адмін крутить баланс з панелі адміна)
+            supabase.channel('money_signals_v3')
+                .on('postgres_changes', { event: 'UPDATE', filter: `login=eq.${userLogin}`, schema: 'public', table: 'user_money' }, payload => {
+                    const updatedData = payload.new;
+                    cashBalance = parseFloat(updatedData.money) || 0.00;
+                    coinBalance = parseInt(updatedData.bobr_coins) || 0;
+                    debtBalance = parseFloat(updatedData.debt) || 0.00;
+                    ownedStocksCount = parseInt(updatedData.stocks) || 0;
+                    
+                    forceUIRefreshWithoutCloud();
+                })
+                .subscribe();
+
+            // Канал 3: Нові повідомлення в живий чат
+            supabase.channel('chat_signals_v3')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                    const newMsg = payload.new;
+                    appendMessageToDOM(newMsg.author, newMsg.text);
+                    scrollChatToBottom();
+                })
+                .subscribe();
         }
+
+        // Старт усього скрипта після завантаження сторінки
+        window.addEventListener('DOMContentLoaded', () => {
+            initAppSession();
+        });
     </script>
 </body>
 </html>
