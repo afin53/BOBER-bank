@@ -77,9 +77,35 @@
             font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
+            transition: transform 0.1s ease, box-shadow 0.2s ease;
+            transform-style: preserve-3d;
         }
         button:hover { background-color: #e08b14; }
         button:disabled { background-color: #555 !important; color: #aaa; cursor: not-allowed; }
+
+        /* 3D Tilt ефект */
+        .tilt {
+            transition: transform 0.1s ease-out, box-shadow 0.2s ease;
+            will-change: transform;
+        }
+
+        .tilt.tilting {
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Анімація появи карток у магазині */
+        .shop-item {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: shopItemAppear 0.4s ease forwards;
+        }
+
+        @keyframes shopItemAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
         .switch-link { margin-top: 15px; font-size: 0.9rem; color: #ff9f1c; cursor: pointer; text-decoration: underline; }
         
@@ -1989,6 +2015,38 @@
             updateCustomBeaver();
         }
 
+        // ==================== 3D TILT ЕФЕКТ ====================
+        function init3DTilt() {
+            // Застосовуємо tilt тільки на важливі кнопки та картки магазину
+            const tiltElements = document.querySelectorAll('button, .shop-item');
+
+            tiltElements.forEach(el => {
+                el.classList.add('tilt');
+
+                el.addEventListener('mousemove', (e) => {
+                    const rect = el.getBoundingClientRect();
+                    const x = ((e.clientX - rect.left) / rect.width) - 0.5;
+                    const y = ((e.clientY - rect.top) / rect.height) - 0.5;
+
+                    const rotateX = -y * 10;
+                    const rotateY = x * 14;
+
+                    el.style.transform = `perspective(700px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                    el.classList.add('tilting');
+                });
+
+                el.addEventListener('mouseleave', () => {
+                    el.style.transition = 'transform 0.4s ease, box-shadow 0.3s ease';
+                    el.style.transform = 'perspective(700px) rotateX(0deg) rotateY(0deg)';
+                    el.classList.remove('tilting');
+
+                    setTimeout(() => {
+                        el.style.transition = 'transform 0.1s ease-out, box-shadow 0.2s ease';
+                    }, 400);
+                });
+            });
+        }
+
         // ==================== ПОРАДИ ====================
         function updateTip() {
             const display = document.getElementById('tip-display');
@@ -2219,6 +2277,11 @@
 
             alert(`Баланс користувача ${target} змінено на ${newBalance}$`);
         }
+
+        // Запускаємо 3D tilt ефект після завантаження
+        window.addEventListener('load', () => {
+            init3DTilt();
+        });
     </script>
 </body>
 </html>
