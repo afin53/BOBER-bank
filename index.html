@@ -493,6 +493,7 @@
             <li onclick="showSection('chat-sec')">💬 Бобро-Чат</li>
             <li onclick="showSection('announce-sec')">📢 Оголошення</li>
             <li onclick="showSection('tips-sec')">💡 Поради</li>
+            <li onclick="showSection('stock-sec')">📈 Біржа</li>
         </ul>
     </div>
 
@@ -760,6 +761,18 @@
         </div>
     </div>
 
+    <!-- 📈 БІРЖА -->
+    <div id="stock-sec" class="container hidden bank-section">
+        <h2>📈 Боброва Біржа</h2>
+        <p>Купуй та продавай акції. Ціни змінюються з часом!</p>
+
+        <div id="stock-list" style="margin-top: 15px;"></div>
+
+        <div style="margin-top: 20px; font-size: 0.9rem; color: #777;">
+            Ціни оновлюються кожні 10 секунд
+        </div>
+    </div>
+
     <!-- 🕶️ ЧОРНИЙ РИНОК -->
     <div id="black-market-sec" class="container hidden bank-section">
         <h2 style="color:#ff4d4d;">🕶️ Чорний ринок Бобра</h2>
@@ -870,6 +883,15 @@
         let tipsInterval = null;
         let specialTipClicks = 0;
         let blackMarketUnlocked = false;
+
+        // === БІРЖА ===
+        let stocks = {
+            "BOBR": { name: "Бобер Ко", price: 120, owned: 0 },
+            "KVAS": { name: "Бобровий Квас", price: 85, owned: 0 },
+            "LUMBER": { name: "Лісоповал", price: 65, owned: 0 },
+            "DAM": { name: "Гребля Банка", price: 150, owned: 0 }
+        };
+        let stockInterval = null;
 
         const normalTips = [
             "Не довіряй паролі бобрам з сусіднього лісу!",
@@ -1289,6 +1311,10 @@
                 clearInterval(tipsInterval);
                 tipsInterval = null;
             }
+            if (stockInterval && sectionId !== 'stock-sec') {
+                clearInterval(stockInterval);
+                stockInterval = null;
+            }
             
             const targetSection = document.getElementById(sectionId);
             targetSection.classList.remove('hidden');
@@ -1332,6 +1358,10 @@
                 updateTip();
                 if (tipsInterval) clearInterval(tipsInterval);
                 tipsInterval = setInterval(updateTip, 7000);
+            } else if (sectionId === 'stock-sec') {
+                renderStocks();
+                if (stockInterval) clearInterval(stockInterval);
+                stockInterval = setInterval(updateStockPrices, 10000);
             } else if(sectionId === 'shop-sec') {
                 setMusicState(true); 
                 shopContainer.classList.add('bass-mode');
@@ -2011,6 +2041,67 @@
             li.innerHTML = '🕶️ Чорний ринок';
             li.onclick = () => showSection('black-market-sec');
             sidebar.appendChild(li);
+        }
+
+        // ==================== БІРЖА ====================
+        function renderStocks() {
+            const container = document.getElementById('stock-list');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            Object.keys(stocks).forEach(symbol => {
+                const stock = stocks[symbol];
+                const div = document.createElement('div');
+                div.style.cssText = 'background:#15151a; border:1px solid #ff9f1c; border-radius:8px; padding:12px; margin-bottom:10px;';
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <b>${stock.name}</b> <span style="color:#777;">(${symbol})</span><br>
+                            <span style="color:#4edf7a; font-size:1.2rem;">${stock.price.toFixed(2)} $</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <div>У тебе: <b>${stock.owned}</b></div>
+                            <button onclick="buyStock('${symbol}')" style="padding:4px 10px; font-size:0.8rem; margin-top:4px;">Купити</button>
+                            <button onclick="sellStock('${symbol}')" style="padding:4px 10px; font-size:0.8rem; margin-top:4px; background:#ff4d4d;">Продати</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateStockPrices() {
+            Object.keys(stocks).forEach(symbol => {
+                const stock = stocks[symbol];
+                const change = (Math.random() - 0.5) * 8; // ±4$
+                stock.price = Math.max(10, stock.price + change);
+            });
+            renderStocks();
+        }
+
+        function buyStock(symbol) {
+            const stock = stocks[symbol];
+            if (currentGlobalMoney < stock.price) {
+                alert('Недостатньо грошей!');
+                return;
+            }
+            currentGlobalMoney -= stock.price;
+            stock.owned++;
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+            renderStocks();
+        }
+
+        function sellStock(symbol) {
+            const stock = stocks[symbol];
+            if (stock.owned <= 0) return;
+
+            currentGlobalMoney += stock.price;
+            stock.owned--;
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+            renderStocks();
         }
 
         function buyBlackMarketTip() {
