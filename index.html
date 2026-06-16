@@ -377,6 +377,53 @@
             margin-top: 6px;
             min-height: 18px;
         }
+
+        /* СТИЛІ ДЛЯ ОГОЛОШЕНЬ */
+        #announce-messages-box {
+            background-color: #15151a;
+            border: 2px solid #4edf7a;
+            border-radius: 10px;
+            height: 280px;
+            overflow-y: auto;
+            padding: 10px;
+            margin-bottom: 12px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #announce-messages-box::-webkit-scrollbar { width: 6px; }
+        #announce-messages-box::-webkit-scrollbar-track { background: #22222b; }
+        #announce-messages-box::-webkit-scrollbar-thumb { background: #4edf7a; border-radius: 3px; }
+
+        .announce-msg {
+            background-color: #1f3a2a;
+            border-radius: 8px;
+            padding: 8px 12px;
+            word-break: break-word;
+            border-left: 3px solid #4edf7a;
+            animation: msg-pop 0.2s ease;
+        }
+
+        .announce-msg .msg-author {
+            font-weight: bold;
+            font-size: 0.82rem;
+            color: #4edf7a;
+            margin-bottom: 3px;
+        }
+
+        .announce-msg .msg-time {
+            font-size: 0.72rem;
+            color: #777;
+            float: right;
+            margin-left: 8px;
+        }
+
+        .announce-msg .msg-text {
+            font-size: 0.95rem;
+            color: #eee;
+        }
     </style>
 </head>
 <body>
@@ -404,6 +451,7 @@
             <li onclick="showSection('leaderboard-sec')">🏆 Таблиця лідерів</li>
             <li onclick="showSection('credit-sec')">🚨 Бобровий Кредит</li>
             <li onclick="showSection('chat-sec')">💬 Бобро-Чат</li>
+            <li onclick="showSection('announce-sec')">📢 Оголошення</li>
         </ul>
     </div>
 
@@ -628,6 +676,19 @@
         <div id="chat-status"></div>
     </div>
 
+    <!-- 📢 ОГОЛОШЕННЯ БОБРА -->
+    <div id="announce-sec" class="container hidden bank-section">
+        <h2>📢 Оголошення Бобра</h2>
+        <p>Важливі події в світі бобрів: джекпоти, покупки, кредити та інше!</p>
+
+        <div id="announce-messages-box">
+            <span class="chat-empty-msg">Завантаження оголошень... 🦫</span>
+        </div>
+        <div style="font-size:0.85rem; color:#777; margin-top:8px; text-align:center;">
+            Оголошення з'являються автоматично при подіях у грі
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
         const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
@@ -651,6 +712,10 @@
         // ЧАТ: стан
         let chatSubscription = null;
         let chatLoaded = false;
+
+        // ОГОЛОШЕННЯ: стан
+        let announceSubscription = null;
+        let announceLoaded = false;
 
         const bobrPhrases = ["боброво!", "дешево!", "БОБРА!", "Купляй не пошкодиеш", "ОФІЦІЙНО", "500_строчок_кода"];
         const bobrTips = [
@@ -788,6 +853,101 @@
         }
 
         // ============================================================
+        // 📢 ЛОГІКА ОГОЛОШЕНЬ (нова категорія)
+        // ============================================================
+
+        function renderAnnouncement(msg, prepend = false) {
+            const box = document.getElementById('announce-messages-box');
+
+            const empty = box.querySelector('.chat-empty-msg');
+            if (empty) empty.remove();
+
+            const div = document.createElement('div');
+            div.classList.add('announce-msg');
+
+            // Add special icon based on message content
+            let icon = "🦫";
+            const lowerMsg = (msg.message || "").toLowerCase();
+            if (lowerMsg.includes("джекпот") || lowerMsg.includes("казік") || lowerMsg.includes("вигра")) icon = "🎰";
+            else if (lowerMsg.includes("картк") || lowerMsg.includes("vip")) icon = "💳";
+            else if (lowerMsg.includes("кредит") || lowerMsg.includes("борг")) icon = "🚨";
+            else if (lowerMsg.includes("купив") || lowerMsg.includes("магазин")) icon = "🛒";
+            else if (lowerMsg.includes("квас") || lowerMsg.includes("сарай") || lowerMsg.includes("квартир")) icon = "🏠";
+
+            div.innerHTML = `
+                <div class="msg-author">
+                    ${icon} ${msg.login || 'Бобер-Банк'}
+                    <span class="msg-time">${formatChatTime(msg.created_at)}</span>
+                </div>
+                <div class="msg-text">${escapeHtml(msg.message)}</div>
+            `;
+
+            if (prepend) {
+                box.insertBefore(div, box.firstChild);
+            } else {
+                box.appendChild(div);
+                box.scrollTop = box.scrollHeight;
+            }
+        }
+
+        async function loadAnnouncements() {
+            const box = document.getElementById('announce-messages-box');
+            box.innerHTML = '<span class="chat-empty-msg">Завантаження оголошень... 🦫</span>';
+
+            try {
+                const { data, error } = await mySupabase
+                    .from('announcements')
+                    .select('*')
+                    .order('created_at', { ascending: true })
+                    .limit(30);
+
+                if (error) throw error;
+
+                box.innerHTML = '';
+
+                if (!data || data.length === 0) {
+                    box.innerHTML = '<span class="chat-empty-msg">Поки немає оголошень. Грайте — і з\'являться! 🦫</span>';
+                } else {
+                    data.forEach(msg => renderAnnouncement(msg));
+                }
+
+                box.scrollTop = box.scrollHeight;
+                announceLoaded = true;
+            } catch (err) {
+                box.innerHTML = `<span class="chat-empty-msg" style="color:#ff4d4d;">Помилка завантаження: ${err.message}. Створіть таблицю 'announcements' в Supabase!</span>`;
+            }
+        }
+
+        function subscribeAnnouncementsRealtime() {
+            if (announceSubscription) {
+                mySupabase.removeChannel(announceSubscription);
+                announceSubscription = null;
+            }
+
+            announceSubscription = mySupabase
+                .channel('announce-realtime')
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'announcements' },
+                    (payload) => {
+                        renderAnnouncement(payload.new);
+                    }
+                )
+                .subscribe();
+        }
+
+        async function postAnnouncement(message) {
+            if (!currentGlobalUser) return;
+            try {
+                await mySupabase
+                    .from('announcements')
+                    .insert([{ login: currentGlobalUser, message: message }]);
+            } catch (err) {
+                console.log("Помилка публікації оголошення:", err.message);
+            }
+        }
+
+        // ============================================================
         // РЕШТА ЛОГІКИ (без змін)
         // ============================================================
 
@@ -891,6 +1051,14 @@
                 setMusicState(false);
                 stopFlyingWords();
                 shopContainer.classList.remove('bass-mode');
+            } else if (sectionId === 'announce-sec') {
+                if (!announceLoaded) {
+                    loadAnnouncements();
+                    subscribeAnnouncementsRealtime();
+                }
+                setMusicState(false);
+                stopFlyingWords();
+                shopContainer.classList.remove('bass-mode');
             } else if(sectionId === 'shop-sec') {
                 setMusicState(true); 
                 shopContainer.classList.add('bass-mode');
@@ -984,6 +1152,8 @@
             statusMsg.style.color = "#4edf7a";
             statusMsg.innerText = `✔ Банк видав вам ${amount.toFixed(2)}$! Увага: лічильник відсотків запущено.`;
 
+            postAnnouncement(`${currentGlobalUser} взяв бобровий кредит на ${amount.toFixed(2)} $! 🚨`);
+
             await mySupabase
                 .from('user_money')
                 .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
@@ -1071,6 +1241,7 @@
                     document.getElementById('slot-3').innerText = "7";
                     statusMsg.style.color = "#4edf7a";
                     message = `👑 ДЖЕКПОТ! Ви зірвали Бобровий Куш! Виграш: +${finalWin.toFixed(2)} $ (Множник x3!)`;
+                    postAnnouncement(`${currentGlobalUser} зірвав ДЖЕКПОТ в Казіку Бобра! 🎰 +${finalWin.toFixed(2)} $`);
                 } else if (rollChance > 15 && rollChance <= 60) {
                     finalWin = bet * 2;
                     let num = Math.floor(Math.random() * 6) + 1;
@@ -1321,6 +1492,8 @@
 
                 await mySupabase.from('user_money').upsert({ login: currentGlobalUser, money: currentGlobalMoney });
 
+                postAnnouncement(`${currentGlobalUser} купив "${selectedProduct}" в Магазині Бобра за ${selectedPrice.toFixed(2)} $! 🛒`);
+
                 document.getElementById('shop-loading').classList.add('hidden');
                 document.getElementById('shop-delivery').classList.remove('hidden');
                 document.getElementById('delivery-item-name').innerText = selectedProduct;
@@ -1347,6 +1520,8 @@
             document.getElementById('buy-btn').classList.add('hidden');
             document.getElementById('loading-section').classList.remove('hidden');
             document.getElementById('status-message').innerText = "";
+
+            postAnnouncement(`${currentGlobalUser} замовив VIP-картку "Бобер" і тепер чекає на нову партію! 💳`);
 
             setTimeout(function() {
                 document.getElementById('loading-section').classList.add('hidden');
