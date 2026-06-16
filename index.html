@@ -3,965 +3,854 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BOBER-BANK v2.2.1 — Офіційний Лісовий Банк</title>
-    
+    <title>BOBER-BANK — Офіційний сайт</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
-        /* ==========================================================================
-           1. ЛЕГЕНДАРНИЙ НЕОНОВИЙ ДИЗАЙН (THE REAL VIBE ENGINE v2.2.1)
-           ========================================================================== */
-        :root {
-            --bg-glow: #09090b;
-            --panel-color: #121216;
-            --border-neon: #3a2215;
-            --bobr-gold: #c68a4c;
-            --bobr-green: #2ecc71;
-            --bobr-red: #e74c3c;
-            --text-main: #f3f4f6;
-            --text-dark: #6b7280;
-        }
-
         body {
-            background-color: var(--bg-glow);
-            color: var(--text-main);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-image: radial-gradient(circle at 50% 10%, #24140b 0%, #09090b 70%);
-            min-height: 100vh;
-        }
-
-        /* ЕКРАН АВТОРИЗАЦІЇ ТА РЕЄСТРАЦІЇ (НЕ PROMPT!) */
-        #auth-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(5, 5, 7, 0.95);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        }
-
-        .auth-card {
-            background: #15151a;
-            border: 2px solid var(--bobr-gold);
-            box-shadow: 0 0 30px rgba(198, 138, 76, 0.2);
-            border-radius: 16px;
-            padding: 35px;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            box-sizing: border-box;
-        }
-
-        .auth-title {
-            font-size: 26px;
-            font-weight: 800;
-            color: var(--bobr-gold);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 25px;
-        }
-
-        .auth-input {
-            width: 100%;
-            padding: 14px;
-            background: #1c1c24;
-            border: 1px solid #2d2d3d;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e24;
             color: #fff;
-            border-radius: 8px;
-            font-size: 16px;
-            margin-bottom: 15px;
-            outline: none;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
-        }
-
-        .auth-input:focus {
-            border-color: var(--bobr-gold);
-        }
-
-        /* ГОЛОВНИЙ ІНТЕРФЕЙС ГРИ */
-        #main-game-hub {
-            display: none; /* Відкривається після входу */
-            width: 100%;
-            max-width: 950px;
-        }
-
-        .game-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-top: 25px;
-        }
-
-        @media (max-width: 768px) {
-            .game-grid { grid-template-columns: 1fr; }
-        }
-
-        .panel-vibe {
-            background-color: var(--panel-color);
-            border: 1px solid var(--border-neon);
-            border-radius: 14px;
-            padding: 24px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.65);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .span-2 { grid-column: 1 / -1; }
-
-        h2, h3 {
-            margin-top: 0;
-            color: var(--bobr-gold);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .balance-row {
+            margin: 0;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-            font-size: 26px;
-            font-weight: 800;
-            margin: 15px 0;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .btn-vibe {
-            background: linear-gradient(135deg, #a05a2c 0%, #783e19 100%);
-            color: white;
-            border: 1px solid #bd713a;
-            padding: 14px 20px;
-            font-size: 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-
-        .btn-vibe:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(160, 90, 44, 0.4);
-            background: linear-gradient(135deg, #b36432 0%, #85451c 100%);
-        }
-
-        .btn-vibe:active { transform: translateY(1px); }
-        .btn-danger { background: linear-gradient(135deg, #c0392b 0%, #962d22 100%); border-color: #e74c3c; }
-        .btn-danger:hover { box-shadow: 0 6px 18px rgba(231, 76, 60, 0.3); }
-        .btn-success { background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%); border-color: #2ecc71; }
-        .btn-success:hover { box-shadow: 0 6px 18px rgba(46, 204, 113, 0.3); }
-
-        /* КЛІКЕР ДУБА */
-        .wood-clicker-area {
-            height: 200px;
-            background: radial-gradient(circle, #221207 0%, #0f0f13 100%);
-            border: 2px dashed #5c351c;
-            border-radius: 12px;
-            display: flex;
             justify-content: center;
-            align-items: center;
-            cursor: pointer;
+            min-height: 100vh;
+            transition: background 0.5s ease;
+            overflow-x: hidden;
+        }
+
+        body.logged-in {
+            background-color: #3d2314;
+        }
+
+        header {
+            background-color: #ff9f1c;
+            width: 100%;
+            text-align: center;
+            padding: 20px 0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             position: relative;
-            user-select: none;
-            overflow: hidden;
+            transition: background 0.5s ease;
+            z-index: 10;
         }
 
-        .wood-avatar {
-            font-size: 70px;
-            transition: transform 0.05s;
-            filter: drop-shadow(0 0 15px rgba(160,90,44,0.4));
+        header.logged-in-header {
+            background-color: #8e5a36;
         }
 
-        .wood-clicker-area:active .wood-avatar {
-            transform: scale(0.9);
-        }
+        header h1 { margin: 0; color: #1e1e24; font-size: 2.5rem; }
+        header.logged-in-header h1 { color: #fff; }
 
-        .click-pop {
-            position: absolute;
-            color: var(--bobr-green);
-            font-weight: 900;
-            font-size: 24px;
-            animation: moveUp 0.5s ease-out forwards;
-            pointer-events: none;
-            text-shadow: 0 2px 4px #000;
-        }
-
-        @keyframes moveUp {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-80px) scale(0.8); }
-        }
-
-        /* КРЕДИТНИЙ БАНЕР */
-        .alert-debt {
-            background: rgba(231, 76, 60, 0.12);
-            border: 1px solid var(--bobr-red);
-            color: #ff7675;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
+        .container {
+            background-color: #2a2a35;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+            width: 350px;
             text-align: center;
-            margin-bottom: 20px;
-            display: none;
-            box-shadow: 0 0 15px rgba(231, 76, 60, 0.1);
+            margin: 20px 0;
+            position: relative;
+            z-index: 5;
         }
 
-        /* БІРЖОВИЙ ГРАФІК */
-        .stock-box {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .graph-wrapper {
-            height: 110px;
-            display: flex;
-            align-items: flex-end;
-            gap: 6px;
-            background: #09090c;
-            border: 1px solid #22222a;
+        .hidden { display: none !important; }
+        
+        input, select {
+            width: 100%;
             padding: 10px;
-            border-radius: 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 6px;
+            box-sizing: border-box;
+            background-color: #3f3f50;
+            color: #fff;
         }
 
-        .graph-pillar {
-            flex: 1;
-            background-color: var(--bobr-green);
-            border-radius: 4px 4px 0 0;
-            transition: height 0.3s ease, background-color 0.3s;
-        }
-
-        /* МАГАЗИН КАТЕГОРІЙ */
-        .market-tabs {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #22222a;
-        }
-
-        .market-tab-btn {
-            background: #1c1c24;
-            color: #a0a5b1;
-            padding: 10px 18px;
-            border-radius: 8px;
-            border: 1px solid #2d2d3d;
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff9f1c;
+            border: none;
+            border-radius: 6px;
+            color: #1e1e24;
             font-weight: bold;
             cursor: pointer;
-            white-space: nowrap;
-            font-size: 14px;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #e08b14; }
+        button:disabled { background-color: #555 !important; color: #aaa; cursor: not-allowed; }
+
+        .switch-link { margin-top: 15px; font-size: 0.9rem; color: #ff9f1c; cursor: pointer; text-decoration: underline; }
+        
+        /* === АНІМАЦІЯ БАСУ === */
+        #shop-items-container {
+            transition: transform 0.1s ease-out;
         }
 
-        .market-tab-btn.active-tab {
-            background: var(--bobr-gold);
-            color: #000;
-            border-color: var(--bobr-gold);
+        .bass-mode {
+            animation: bass-bounce 0.35s infinite alternate ease-in-out;
         }
 
-        .market-showcase {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+        @keyframes bass-bounce {
+            0% { transform: scale(1.0); }
+            100% { transform: scale(0.96); }
         }
 
-        @media (max-width: 550px) { .market-showcase { grid-template-columns: 1fr; } }
-
-        .market-item-card {
-            background: #17171f;
-            border: 1px solid #2b2b3a;
+        .shop-item {
+            background-color: #4d3120;
+            border: 2px solid #ff9f1c;
             border-radius: 10px;
-            padding: 18px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            transition: transform 0.1s;
+        }
+        
+        .shop-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 159, 28, 0.3);
         }
 
-        .market-item-img {
-            width: 70px;
-            height: 70px;
-            object-fit: contain;
-            margin-bottom: 12px;
+        .shop-item img {
+            width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 10px;
         }
+        .shop-item h3 { margin: 5px 0; }
+        .price-tag { color: #4edf7a; font-weight: bold; font-size: 1.2rem; }
 
-        .market-item-name { font-weight: bold; font-size: 16px; margin-bottom: 6px; }
-        .market-item-cost { color: #f1c40f; font-weight: 700; margin-bottom: 12px; font-size: 15px; }
+        .bank-image { width: 100%; max-width: 250px; border-radius: 8px; margin-bottom: 15px; border: 3px solid #ff9f1c; cursor: pointer; transition: transform 0.1s; }
+        .bank-image:active { transform: scale(0.95); }
 
-        /* СПИСОК МАЙНА */
-        .asset-line {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid #1f1f26;
+        .loader { border: 6px solid #3f3f50; border-top: 6px solid #ff9f1c; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #status-message, #shop-status-message, #casino-status-message, #stock-status-message { font-weight: bold; font-size: 1.1rem; color: #ff4d4d; margin-top: 15px; z-index: 10; position: relative; }
+        .bomzh-text { font-weight: bold; font-style: italic; margin-top: 10px; }
+
+        .menu-btn {
+            position: absolute;
+            left: 20px;
+            top: 22px;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #1e1e24;
+            user-select: none;
         }
+        header.logged-in-header .menu-btn { color: #fff; }
 
-        .asset-line-verified { color: var(--bobr-green); font-weight: bold; }
-
-        /* СЛОТ-МАШИНА КАЗИНО */
-        .casino-window {
-            background: #000;
-            border: 2px solid #1a1a24;
-            color: #00ff66;
-            font-family: 'Courier New', monospace;
-            font-size: 28px;
-            font-weight: bold;
-            text-align: center;
-            padding: 24px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            letter-spacing: 4px;
-            text-shadow: 0 0 10px rgba(0,255,102,0.5);
-        }
-
-        /* ЧАТ ЛІСУ */
-        .chat-container {
-            height: 160px;
+        .sidebar {
+            position: fixed;
+            left: -260px;
+            top: 0;
+            width: 240px;
+            height: 100%;
+            background-color: #22120a;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+            transition: 0.3s;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 100;
+            text-align: left;
             overflow-y: auto;
-            background: #09090c;
-            border: 1px solid #22222a;
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
         }
+        .sidebar.active { left: 0; }
+        .sidebar h3 { margin-top: 0; color: #ff9f1c; border-bottom: 1px solid #ff9f1c; padding-bottom: 10px; }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar ul li { padding: 12px 10px; color: #fff; cursor: pointer; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+        .sidebar ul li:hover { background-color: #8e5a36; }
+        
+        .close-sidebar-btn { text-align: right; font-size: 1.5rem; cursor: pointer; color: #ff9f1c; margin-bottom: 10px; }
 
-        .msg-line { font-size: 14px; line-height: 1.4; }
-        .msg-line b { color: var(--bobr-gold); }
-
-        .chat-controls { display: flex; gap: 12px; }
-        .chat-input-node {
-            flex: 1;
-            padding: 14px;
-            background: #1c1c24;
-            border: 1px solid #2d2d3d;
-            color: white;
+        /* === НОВІ МОДУЛІ === */
+        /* Інвентар у бічному меню */
+        .inventory-box {
+            margin-top: 20px;
+            background: #140a05;
+            padding: 10px;
             border-radius: 8px;
-            outline: none;
+            border: 1px solid #ff9f1c;
+        }
+        .inventory-title { color: #ff9f1c; font-size: 0.95rem; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
+        .inv-item { font-size: 0.85rem; padding: 5px; border-bottom: 1px dashed #3d2314; display: flex; justify-content: space-between; align-items: center; }
+        .use-btn { background: #4edf7a; color: #000; padding: 2px 6px; font-size: 0.75rem; border-radius: 4px; width: auto; margin: 0; }
+
+        /* Казино розширене */
+        .slots-display {
+            background: #141419;
+            border: 3px inset #ff9f1c;
+            border-radius: 8px;
+            font-size: 2.5rem;
+            padding: 15px;
+            letter-spacing: 10px;
+            margin: 15px 0;
+            font-family: monospace;
+            text-shadow: 0 0 10px rgba(255,159,28,0.5);
         }
 
-        /* МУЗИЧНИЙ МОДУЛЬ */
-        .music-bar {
-            text-align: center;
-            background: linear-gradient(135deg, #121216 0%, #20130b 100%);
-            border: 1px solid var(--border-neon);
+        /* Чат */
+        .forest-chat {
+            background: #1c1c24;
+            border-radius: 8px;
+            height: 120px;
+            overflow-y: auto;
+            text-align: left;
+            padding: 10px;
+            font-size: 0.85rem;
+            margin-top: 15px;
+            border: 1px solid #3f3f50;
         }
+        .chat-msg { margin-bottom: 6px; line-height: 1.2; }
+        .chat-author { color: #ff9f1c; font-weight: bold; }
+
+        /* Біржа */
+        .stock-market { text-align: left; margin-top: 15px; }
+        .stock-row { display: flex; justify-content: space-between; align-items: center; background: #3f3f50; padding: 8px; border-radius: 6px; margin-bottom: 8px; }
+        .stock-graph-bars { display: flex; gap: 4px; height: 40px; align-items: flex-end; background: #141419; padding: 4px; border-radius: 4px; margin-bottom: 10px; }
+        .graph-bar { flex: 1; background: #4edf7a; border-radius: 2px 2px 0 0; min-height: 5px; }
     </style>
 </head>
 <body>
 
-    <div id="auth-overlay">
-        <div class="auth-card">
-            <div class="auth-title">🪵 Авторизація Лісу 🪓</div>
-            <p style="color: var(--text-dark); font-size: 13px; margin-top: -15px; margin-bottom: 20px;">Введіть логін для входу або створення аккаунту</p>
-            <input type="text" id="auth-username-field" class="auth-input" placeholder="Ваш унікальний логін..." autofocus>
-            <button class="btn-vibe btn-success" onclick="processAccountAuth()">Увійти в кабінет</button>
-            <div id="auth-status-log" style="color: #e74c3c; margin-top: 15px; font-size: 13px; font-weight: bold;"></div>
+    <audio id="bg-music" src="music.mp4" loop></audio>
+
+    <header id="main-header">
+        <div id="menu-trigger" class="menu-btn hidden" onclick="toggleSidebar(true)">☰</div>
+        <h1 id="header-title">🦫 BOBER-BANK</h1>
+    </header>
+
+    <div id="sidebar" class="sidebar">
+        <div class="close-sidebar-btn" onclick="toggleSidebar(false)">✖</div>
+        <h3>Menu Бобра</h3>
+        <ul>
+            <li onclick="showSection('balance-sec')">💰 Баланс</li>
+            <li onclick="showSection('card-sec')">💳 Замовити картку</li>
+            <li onclick="showSection('job-sec')">🔨 Робота (Клікер)</li>
+            <li onclick="showSection('shop-sec')">🛒 Магазин Бобра</li>
+            <li onclick="showSection('casino-sec')">🎰 Бобро-Казино</li>
+            <li onclick="showSection('stock-sec')">📈 Фондова Біржа</li>
+        </ul>
+
+        <div class="inventory-box">
+            <div class="inventory-title">🎒 Твій Інвентар</div>
+            <div id="inventory-list-render"><i style="color:#aaa; font-size:0.8rem;">Порожньо...</i></div>
         </div>
     </div>
 
-    <div id="main-game-hub">
+    <!-- ВХІД ТА РЕЄСТРАЦІЯ -->
+    <div id="register-box" class="container">
+        <h2>Реєстрація у Бобер-Банку</h2>
+        <input type="text" id="reg-login" placeholder="Придумайте логін" required>
+        <input type="password" id="reg-password" placeholder="Придумайте пароль" required>
+        <button onclick="registerUser()">Зареєструватися</button>
+        <div class="switch-link" onclick="toggleForms('login')">Вже є акаунт? Увійти</div>
+    </div>
+
+    <div id="login-box" class="container hidden">
+        <h2>Вхід в систему</h2>
+        <input type="text" id="login-username" placeholder="Логін">
+        <input type="password" id="login-password" placeholder="Пароль">
+        <button onclick="loginUser()">Увійти</button>
+        <div class="switch-link" onclick="toggleForms('register')">Назад до реєстрації</div>
+    </div>
+
+    <!-- БАЛАНС -->
+    <div id="balance-sec" class="container hidden bank-section">
+        <h2>Твій особистий баланс</h2>
+        <h1 style="color: #4edf7a; font-size: 3rem; margin: 10px 0;"><span id="user-money-display">0.00</span> $</h1>
+        <div class="bomzh-text">ех у тебе немає ні бакса який ж ти бомж</div>
+
+        <div class="forest-chat" id="main-forest-chat">
+            <div class="chat-msg"><span class="chat-author">[Система]:</span> Ласкаво просимо до чату Лісу!</div>
+        </div>
+    </div>
+
+    <!-- VIP-КАРТКА -->
+    <div id="card-sec" class="container hidden bank-section">
+        <h2>Оформити VIP-картку "Бобер"</h2>
+        <p>Унікальний дизайн з чистим бобровим хутром!</p>
+        <img src="beaver.jpeg" alt="Преміальний Бобер" style="width:100%; max-width:250px; border-radius:8px; border: 3px solid #ff9f1c; margin-bottom:10px;">
         
-        <div style="text-align: center; margin-bottom: 10px;">
-            <h1 style="margin: 0; font-size: 42px; font-weight: 900; color: var(--bobr-gold); text-shadow: 0 4px 10px rgba(0,0,0,0.5);">🪵 BOBER-BANK v2.2.1</h1>
-            <p style="color: var(--text-dark); margin: 5px 0 0 0; font-size: 14px; font-weight: 600;">Головний вузол фінансової системи Бобро-Лісу</p>
+        <button id="buy-btn" onclick="startLoading()">Замовити картку</button>
+
+        <div id="loading-section" class="hidden">
+            <div class="loader"></div>
+            <p>Обробка транзакції банком... Зачекайте 10 секунд</p>
+        </div>
+        <div id="status-message"></div>
+    </div>
+
+    <!-- КЛІКЕР (РОБОТА) -->
+    <div id="job-sec" class="container hidden bank-section">
+        <h2>Лісоповал Бобрів 🔨</h2>
+        <p>Клікай на бобра, щоб рубати ліс і заробляти гроші!</p>
+        <p>За кожен клік: <span id="per-click-reward-text" style="color:#ff9f1c; font-weight:bold;">+0.10 $</span></p>
+        
+        <img src="beaver.jpeg" alt="Працюючий Бобер" class="bank-image" onclick="clickBeaver()">
+        
+        <h3>Зароблено всього: <span id="clicker-money">0.00</span> $</h3>
+    </div>
+
+    <!-- МАГАЗИН -->
+    <div id="shop-sec" class="container hidden bank-section">
+        <h2>🛒 Магазин Бобра</h2>
+        <p>Купуй елітну боброву нерухомість та напої!</p>
+
+        <div id="shop-items-container">
+            <div class="shop-item">
+                <img src="sarai.png" alt="Сарай">
+                <h3>Елітний Сарай</h3>
+                <p class="price-tag">10.00 $</p>
+                <button id="btn-sarai" onclick="buyProduct('Елітний Сарай', 10.00, 'btn-sarai')">Купити Сарай</button>
+            </div>
+
+            <div class="shop-item">
+                <img src="kvart.png" alt="Квартира">
+                <h3>Люкс Квартира</h3>
+                <p class="price-tag">50.00 $</p>
+                <button id="btn-kvart" onclick="buyProduct('Люкс Квартира', 50.00, 'btn-kvart')">Купити Квартиру</button>
+            </div>
+
+            <div class="shop-item">
+                <img src="bobr.png" alt="Квас">
+                <h3>Бобровий Квас (0.5л)</h3>
+                <p class="price-tag">8.00 $</p>
+                <button id="btn-bobr" onclick="buyProduct('Бобровий Квас', 8.00, 'btn-bobr')">Купити Квас</button>
+            </div>
         </div>
 
-        <div class="game-grid">
+        <div id="shop-loading" class="hidden">
+            <div class="loader"></div>
+            <p id="shop-loading-text">З'єднюємося з магазином...</p>
+        </div>
+
+        <div id="shop-delivery" class="hidden">
+            <h3>📦 Оформлення бобро-доставки</h3>
+            <p>Ви купуєте: <span id="delivery-item-name" style="color:#ff9f1c; font-weight:bold;"></span></p>
             
-            <div class="panel-vibe span-2">
-                <div id="core-debt-banner" class="alert-debt">
-                    <span id="core-debt-text">Кредитна заборгованість: 0.00 $ (+10% кожні 30 сек)</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span id="core-account-id" style="font-family: monospace; color: var(--text-dark); font-size: 16px; font-weight: bold;">ACCOUNT-ID: LOGGING_IN</span>
-                    <span style="background: #241911; border: 1px solid var(--bobr-gold); padding: 4px 12px; border-radius: 20px; font-size: 11px; color: var(--bobr-gold); font-weight: bold;">CORE NETWORK SECURE</span>
-                </div>
-                <hr style="border: 0; border-top: 1px solid #22222a; margin: 15px 0;">
-                <div class="balance-row">
-                    <span>Готівковий баланс:</span>
-                    <span style="color: var(--bobr-green);"><span id="core-balance-usd">0.00</span> $</span>
-                </div>
-                <div class="balance-row">
-                    <span>Бобро-Коїни (Крипта):</span>
-                    <span style="color: #3498db;"><span id="core-balance-bb">0</span> BB</span>
-                </div>
-            </div>
+            <label>Вибір місця видачі:</label>
+            <select id="delivery-method">
+                <option value="Нова Пошта">Нова Пошта</option>
+                <option value="Укр Пошта">Укр Пошта</option>
+                <option value="Бобр Шопс">Бобр Шопс</option>
+            </select>
 
-            <div class="panel-vibe">
-                <h2>🪓 Лісоповал Економіки</h2>
-                <p style="color: var(--text-dark); font-size: 13px; margin-top: -8px;">Кожен удар по стовбуру приносить гарантований прибуток у банк.</p>
-                <div id="wood-clicker-node" class="wood-clicker-area">
-                    <div class="wood-avatar">🪵</div>
-                </div>
-            </div>
+            <label>Місце призначення:</label>
+            <select id="delivery-destination">
+                <option value="Україна">Україна</option>
+                <option value="Бобростік">Бобростік</option>
+                <option value="Бобренятко">Бобренятко</option>
+            </select>
 
-            <div class="panel-vibe" style="text-align: center;">
-                <h2>💈 VIP Перукарня Лісу</h2>
-                <p id="core-barber-label" style="color: #f1c40f; font-weight: bold; margin-bottom: 12px;">Залишилося зрізати: 15 пасм хутра</p>
-                <img id="core-barber-img" src="nocut.png" alt="𦫫" style="width: 120px; height: 120px; cursor: pointer; transition: transform 0.1s; object-fit: contain;">
-                <p style="color: var(--text-dark); font-size: 12px; margin: 10px 0 0 0;">Обслуговування еліти лісу. Виплата за повну стрижку: +5.00$!</p>
-            </div>
-
-            <div class="panel-vibe">
-                <h2>🎰 Елітні Слоти "Три Сокири"</h2>
-                <div id="core-casino-screen" class="casino-window">🪵 | 🪵 | 🪵</div>
-                <input id="core-casino-wager" class="auth-input" type="number" value="10" min="5" style="text-align: center;">
-                <button class="btn-vibe btn-danger" onclick="triggerCasinoSpin()">Запустити автомати (Мін. 5$)</button>
-            </div>
-
-            <div class="panel-vibe">
-                <h2>📈 Акціонерна Біржа Лісу</h2>
-                <div class="stock-box">
-                    <div>Акція серії <b style="color: var(--bobr-gold);">WOOD</b>: <span id="core-stock-val" style="font-weight: 800; color: var(--bobr-green);">50.00 $</span></div>
-                    <div id="core-stock-direction" class="stock-trend" style="font-weight: bold; color: var(--bobr-green);">0.00%</div>
-                </div>
-                <div id="core-stock-graph" class="graph-wrapper"></div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px;">
-                    <button class="btn-vibe btn-success" onclick="purchaseMarketStock()">Купити акцію</button>
-                    <button class="btn-vibe" style="background: #2c2c35; border-color: #444;" onclick="liquidateMarketStock()">Продати акцію</button>
-                </div>
-            </div>
-
-            <div class="panel-vibe span-2">
-                <h2>🛒 Центральний Універмаг Лісу</h2>
-                <p style="color: var(--text-dark); font-size: 13px; margin-top: -8px; margin-bottom: 15px;">Всі покупки миттєво фіксуються в базу даних Supabase у ваш інвентар.</p>
-                
-                <div class="market-tabs">
-                    <button class="market-tab-btn active-tab" onclick="toggleMarketSection('realestate', this)">🏡 Нерухомість</button>
-                    <button class="market-tab-btn" onclick="toggleMarketSection('cars', this)">🏎️ Автопарк</button>
-                    <button class="market-tab-btn" onclick="toggleMarketSection('business', this)">💼 Промисловість</button>
-                    <button class="market-tab-btn" onclick="toggleMarketSection('tools', this)">🪓 Інструменти</button>
-                    <button class="market-tab-btn" onclick="toggleMarketSection('documents', this)">📜 Документи</button>
-                    <button class="market-tab-btn" onclick="toggleMarketSection('accessories', this)">👑 Аксесуари</button>
-                    <button class="market-tab-btn" onclick="toggleMarketSection('promo', this)">🔥 Пропозиції</button>
-                    <button class="market-tab-btn" onclick="toggleMarketSection('fun', this)">🎮 Розваги</button>
-                    <button class="market-tab-btn" onclick="toggleMarketSection('vip', this)">💎 VIP Ранги</button>
-                </div>
-
-                <div id="core-market-grid" class="market-showcase">
-                    </div>
-            </div>
-
-            <div class="panel-vibe span-2">
-                <h2>🎒 Державний Реєстр Громадянина</h2>
-                <div class="asset-line">
-                    <span>Нерухомість та придбані цінності:</span>
-                    <span id="core-asset-list" style="font-weight: bold; color: #fff;">Завантаження майна...</span>
-                </div>
-                <div id="core-passport-line" class="asset-line">
-                    <span>ID-Паспорт Громадянина Лісу:</span>
-                    <span id="core-passport-status" style="font-weight: bold;">Перевірка...</span>
-                </div>
-                <div class="asset-line">
-                    <span>Активи на фондовому рахунку:</span>
-                    <span id="core-asset-stocks" style="font-weight: bold; color: #f1c40f;">0 шт.</span>
-                </div>
-            </div>
-
-            <div class="panel-vibe span-2">
-                <h2>💬 Загальнолісовий Крипто-Чат (WebSockets)</h2>
-                <div id="core-chat-stream" class="chat-container"></div>
-                <div class="chat-controls">
-                    <input id="core-chat-node-input" class="chat-input-node" type="text" placeholder="Напишіть послання лісу..." maxlength="120">
-                    <button class="btn-vibe" style="margin: 0; width: auto; padding: 0 30px;" onclick="broadcastChatMessage()">Надіслати</button>
-                </div>
-            </div>
-
-            <div class="panel-vibe span-2 music-bar">
-                <button class="btn-vibe" style="background: #1a1a22; max-width: 350px; border-color: #333;" onclick="toggleBassRadio()">
-                    🎵 РАДІО "БОБРОВИЙ БАС 24/7": <span id="core-music-label" style="color: var(--bobr-red);">ВИМКНЕНO</span>
-                </button>
-                <audio id="audio-bass-engine" src="bass.mp3" loop></audio>
-            </div>
-
+            <button onclick="confirmDelivery()">Оформити замовлення</button>
         </div>
+
+        <div id="shop-status-message"></div>
+    </div>
+
+    <!-- ВДОСКОНАЛЕНЕ КАЗИНО -->
+    <div id="casino-sec" class="container hidden bank-section">
+        <h2>🎰 Бобро-Казино Вулкан 777</h2>
+        <p>Випробуй боброву вдачу! Три 🦫 дають Джекпот х50!</p>
+        
+        <div class="slots-display" id="slots-screen">🍒 🪵 🦫</div>
+
+        <label>Обери ставку:</label>
+        <select id="casino-bet-amount">
+            <option value="1">1.00 $</option>
+            <option value="5">5.00 $</option>
+            <option value="10">10.00 $</option>
+            <option value="50">50.00 $</option>
+        </select>
+
+        <button id="spin-slots-btn" onclick="spinSlots()">Крутити Барабани!</button>
+        <div id="casino-status-message"></div>
+    </div>
+
+    <!-- ФОНДОВА БІРЖА -->
+    <div id="stock-sec" class="container hidden bank-section">
+        <h2>📈 Боброва Фондова Біржа</h2>
+        <p>Купуй акції лісових підприємств та багатій на коливаннях курсу!</p>
+        
+        <div class="stock-graph-bars" id="stock-visual-graph">
+            <div class="graph-bar" style="height: 40%;"></div>
+            <div class="graph-bar" style="height: 60%;"></div>
+            <div class="graph-bar" style="height: 20%;"></div>
+            <div class="graph-bar" style="height: 80%;"></div>
+            <div class="graph-bar" style="height: 50%;"></div>
+        </div>
+
+        <div class="stock-market">
+            <div class="stock-row">
+                <div>🪵 <b>ДубКорп (DC)</b><br>Ціна: <span id="price-dc">10.00</span> $ (У тебе: <span id="own-dc">0</span>)</div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <button style="padding:4px 8px; font-size:0.8rem; margin:0;" onclick="tradeStock('DC', 'buy')">Купити</button>
+                    <button style="padding:4px 8px; font-size:0.8rem; margin:0; background:#ff4d4d;" onclick="tradeStock('DC', 'sell')">Продати</button>
+                </div>
+            </div>
+
+            <div class="stock-row">
+                <div>🌊 <b>ГребляІнвест (DI)</b><br>Ціна: <span id="price-di">25.00</span> $ (У тебе: <span id="own-di">0</span>)</div>
+                <div style="display:flex; flex-direction:column; gap:4px;">
+                    <button style="padding:4px 8px; font-size:0.8rem; margin:0;" onclick="tradeStock('DI', 'buy')">Купити</button>
+                    <button style="padding:4px 8px; font-size:0.8rem; margin:0; background:#ff4d4d;" onclick="tradeStock('DI', 'sell')">Продати</button>
+                </div>
+            </div>
+        </div>
+        <div id="stock-status-message"></div>
     </div>
 
     <script>
-        // Конфіг підключення бази даних Supabase
-        const DEPLOY_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
-        const PUBLIC_SECRET = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
-        const supabase = window.supabase.createClient(DEPLOY_URL, PUBLIC_SECRET);
+        const SUPABASE_URL = "https://nvwkbgknvxfxvnhkcxnd.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_csnhsX6JOzkZqKwFePoXiw_2ZqGbn6m";
+        const mySupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Стан гри v2.2.1
-        let sessionUser = "Гість";
-        let userWalletUsd = 100.00;
-        let userWalletBb = 0;
-        let userCreditDebt = 0.00;
-        let userStockShares = 0;
-        let userInventoryString = "";
+        let currentGlobalUser = "";
+        let currentGlobalMoney = 0.0;
+        let selectedProduct = "";
+        let selectedPrice = 0;
+        let currentBtnId = "";
+        
+        // Розширені локальні сховища даних
+        let purchasedItems = []; 
+        let userInventory = {}; 
+        let clickModifier = 1.0; 
 
-        let radioPlaying = false;
-        let barberClicksLeft = 15;
-        let liveStockValue = 50.00;
-        let stockGraphRecords = [50, 47, 53, 51, 56, 52, 49, 53, 55, 58];
-
-        let hasInitialAdminHook = false;
-        let systemLastReloadMarker = null;
-
-        // Повна база товарів на 9 категорій (Вайб перших версій)
-        const CENTRAL_MARKET_DB = {
-            realestate: [
-                { id: "h_hut", name: "🏡 Хатина з гілок", cost: 150.00, img: "hut.png" },
-                { id: "h_dam", name: "🏰 Елітна Дамба", cost: 1200.00, img: "dam.png" },
-                { id: "h_mansion", name: "🏢 Пентхаус на дубі", cost: 5000.00, img: "mansion.png" }
-            ],
-            cars: [
-                { id: "c_cart", name: "🛒 Дерев'яна тачка", cost: 80.00, img: "cart.png" },
-                { id: "c_traktor", name: "🚜 Трактор 'Гриць'", cost: 950.00, img: "tractor.png" },
-                { id: "c_tesla", name: "🏎️ Кибер-Ніва 2026", cost: 4000.00, img: "tesla.png" }
-            ],
-            business: [
-                { id: "b_saw", name: "🏭 Пилорама 'Сучок'", cost: 600.00, img: "sawmill.png" },
-                { id: "b_casino", name: "🎰 Підпільне казино", cost: 2500.00, img: "casino_b.png" }
-            ],
-            tools: [
-                { id: "t_axe", name: "🪓 Сталева Сокира", cost: 45.00, img: "axe.png" },
-                { id: "t_saw", name: "🪚 Бензопила 'Штиль'", cost: 300.00, img: "chainsaw.png" }
-            ],
-            documents: [
-                { id: "d_passport", name: "📜 ID-Паспорт Лісу", cost: 200.00, img: "passport.png" },
-                { id: "d_license", name: "🚗 Права на Трактор", cost: 120.00, img: "license.png" }
-            ],
-            accessories: [
-                { id: "a_chain", name: "🪙 Золотий ланцюг", cost: 500.00, img: "chain.png" },
-                { id: "a_crown", name: "👑 Корона Короля Лісу", cost: 3000.00, img: "crown.png" }
-            ],
-            promo: [
-                { id: "p_box", name: "📦 Скриня з сюрпризом", cost: 150.00, img: "box.png" }
-            ],
-            fun: [
-                { id: "f_cola", name: "🥤 Бобро-Кола з басом", cost: 15.00, img: "cola.png" },
-                { id: "f_cube", name: "🎲 Кубики для катрану", cost: 50.00, img: "dice.png" }
-            ],
-            vip: [
-                { id: "v_gold", name: "💎 VIP Золотий статус", cost: 1000.00, img: "vip.png" }
-            ]
+        // Дані для Біржі
+        let stocks = {
+            DC: { price: 10.0, owned: 0, history: [10, 12, 9, 11, 10] },
+            DI: { price: 25.0, owned: 0, history: [22, 24, 26, 23, 25] }
         };
 
-        // ФУНКЦІЯ АВТОРИЗАЦІЇ/РЕЄСТРАЦІЇ З ВІКНА
-        async function processAccountAuth() {
-            const nameInput = document.getElementById('auth-username-field').value.trim();
-            const logBox = document.getElementById('auth-status-log');
+        // Базові фрази для лісового чату
+        const chatBots = [
+            "Старий Бобер", "Малий Бобрик", "Купець Василь", "Анонімний Крот", "Ондатра Інвестор"
+        ];
+        const chatPhrases = [
+            "Хтось бачив де дуби дешевші?",
+            "Казино сьогодні сипле як ніколи!",
+            "Знову курс ГребляІнвест впав, я зливаю активи...",
+            "Працюю на лісоповалі вже третю добу, спина болить.",
+            "Бобровий Квас — це нектар богів, купуйте тільки в Бобр Шопс!",
+            "Купив сарай, тепер маю де ховати свої гілки.",
+            "Президент Бобрів знову крутить слоти на держбюджет 😂"
+        ];
+
+        function playMusic() {
+            const music = document.getElementById('bg-music');
+            music.play().catch(err => console.log("Чекаємо взаємодії для старту треку"));
+        }
+
+        function toggleForms(target) {
+            if (target === 'login') {
+                document.getElementById('register-box').classList.add('hidden');
+                document.getElementById('login-box').classList.remove('hidden');
+            } else {
+                document.getElementById('login-box').classList.add('hidden');
+                document.getElementById('register-box').classList.remove('hidden');
+            }
+        }
+
+        function toggleSidebar(open) {
+            if(open) document.getElementById('sidebar').classList.add('active');
+            else document.getElementById('sidebar').classList.remove('active');
+        }
+
+        function showSection(sectionId) {
+            const sections = document.querySelectorAll('.bank-section');
+            sections.forEach(sec => sec.classList.add('hidden'));
             
-            // Валідація символів
-            let validatedName = nameInput.replace(/[^a-zA-Z0-9_а-яА-ЯіїєІЇЄ]/g, "");
-            if(!validatedName || validatedName.length < 2) {
-                logBox.innerText = "❌ Введіть коректний логін (мін. 2 символи)!";
+            const targetSection = document.getElementById(sectionId);
+            targetSection.classList.remove('hidden');
+            
+            const shopContainer = document.getElementById('shop-items-container');
+
+            if(sectionId === 'shop-sec') {
+                shopContainer.classList.add('bass-mode');
+                shopContainer.classList.remove('hidden');
+                document.getElementById('shop-loading').classList.add('hidden');
+                document.getElementById('shop-delivery').classList.add('hidden');
+                document.getElementById('shop-status-message').innerText = "";
+            } else {
+                shopContainer.classList.remove('bass-mode');
+            }
+            
+            toggleSidebar(false);
+        }
+
+        function updateStatusText() {
+            const bomzhTextElement = document.querySelector('.bomzh-text');
+            if (!bomzhTextElement) return;
+            
+            if (currentGlobalMoney < 5.0) {
+                bomzhTextElement.innerText = "ех у тебе немає ні бакса який ж ти бомж";
+                bomzhTextElement.style.color = "#ff4d4d";
+            } else if (currentGlobalMoney >= 5.0 && currentGlobalMoney < 50.0) {
+                bomzhTextElement.innerText = "Ого, та ти вже солідний бобер! 🪵";
+                bomzhTextElement.style.color = "#ff9f1c";
+            } else {
+                bomzhTextElement.innerText = "Офіційно: ти Бобровий Магнат! 👑";
+                bomzhTextElement.style.color = "#4edf7a";
+            }
+        }
+
+        // Рендеринг інвентарю в бічній панелі
+        function renderInventory() {
+            const list = document.getElementById('inventory-list-render');
+            list.innerHTML = "";
+            const keys = Object.keys(userInventory);
+            
+            if(keys.length === 0) {
+                list.innerHTML = '<i style="color:#aaa; font-size:0.8rem;">Порожньо...</i>';
                 return;
             }
 
-            sessionUser = validatedName;
-            logBox.style.color = "#2ecc71";
-            logBox.innerText = "Синхронізація з Бобро-Лісом...";
+            keys.forEach(itemName => {
+                if(userInventory[itemName] > 0) {
+                    const row = document.createElement('div');
+                    row.className = "inv-item";
+                    let actionBtn = "";
+                    if(itemName === "Бобровий Квас") {
+                        actionBtn = `<button class="use-btn" onclick="useKvas()">Пити</button>`;
+                    }
+                    row.innerHTML = `<span>🪵 ${itemName} (x${userInventory[itemName]})</span> ${actionBtn}`;
+                    list.appendChild(row);
+                }
+            });
+        }
 
-            document.getElementById('core-account-id').innerText = "ACCOUNT-ID: " + sessionUser.toUpperCase();
+        function useKvas() {
+            if(userInventory["Бобровий Квас"] > 0) {
+                userInventory["Бобровий Квас"]--;
+                clickModifier = 2.0;
+                document.getElementById('per-click-reward-text').innerText = "+0.20 $";
+                addChatMessage("Система", "Ви випили Бобровий Квас! Ефект: Кліки подвоєно на 30 секунд! ⚡🥤");
+                renderInventory();
+                
+                setTimeout(() => {
+                    clickModifier = 1.0;
+                    document.getElementById('per-click-reward-text').innerText = "+0.10 $";
+                    addChatMessage("Система", "Дія квасу закінчилася. Енергія впала.");
+                }, 30000);
+            }
+        }
 
-            // Ініціалізація кліків та івентів клавіатури
-            document.getElementById('wood-clicker-node').addEventListener('click', recordWoodClick);
-            document.getElementById('core-barber-img').addEventListener('click', recordBarberClick);
-            document.getElementById('core-chat-node-input').addEventListener('keydown', function(e) {
-                if(e.key === 'Enter') broadcastChatMessage();
+        function addChatMessage(author, text) {
+            const chatNode = document.getElementById('main-forest-chat');
+            if(!chatNode) return;
+            const entry = document.createElement('div');
+            entry.className = "chat-msg";
+            entry.innerHTML = `<span class="chat-author">[${author}]:</span> ${text}`;
+            chatNode.appendChild(entry);
+            chatNode.scrollTop = chatNode.scrollHeight;
+        }
+
+        // Симуляція активності чату лісу
+        setInterval(() => {
+            if(currentGlobalUser) {
+                const randomBot = chatBots[Math.floor(Math.random() * chatBots.length)];
+                const randomText = chatPhrases[Math.floor(Math.random() * chatPhrases.length)];
+                addChatMessage(randomBot, randomText);
+            }
+        }, 9000);
+
+        // Робота біржі — зміна цін
+        setInterval(() => {
+            if(!currentGlobalUser) return;
+            
+            ['DC', 'DI'].forEach(ticker => {
+                let change = (Math.random() - 0.48) * (ticker === 'DC' ? 2 : 5);
+                stocks[ticker].price = Math.max(1.0, parseFloat((stocks[ticker].price + change).toFixed(2)));
+                stocks[ticker].history.push(stocks[ticker].price);
+                if(stocks[ticker].history.length > 8) stocks[ticker].history.shift();
             });
 
-            // Відкриваємо першу вкладку магазину
-            toggleMarketSection('realestate', document.querySelector('.market-tab-btn'));
+            document.getElementById('price-dc').innerText = stocks['DC'].price.toFixed(2);
+            document.getElementById('price-di').innerText = stocks['DI'].price.toFixed(2);
 
-            // Підвантажуємо дані та запускаємо хаб
-            await loadCloudDataAndBootstrap();
-        }
+            // Оновлення міні-графіку акцій за допомогою стовпчиків
+            const graphNode = document.getElementById('stock-visual-graph');
+            graphNode.innerHTML = "";
+            stocks['DC'].history.forEach(p => {
+                const bar = document.createElement('div');
+                bar.className = "graph-bar";
+                bar.style.height = `${Math.min(100, p * 3)}%`;
+                graphNode.appendChild(bar);
+            });
+        }, 5000);
 
-        // Завантаження даних та активація гри
-        async function loadCloudDataAndBootstrap() {
-            let userStuff = { owned_items: "", has_passport: false };
-            let connectionDone = false;
+        async function registerUser() {
+            playMusic();
+            const loginInput = document.getElementById('reg-login').value.trim();
+            const passInput = document.getElementById('reg-password').value.trim();
 
-            // Захист від зависання бази даних (Fail-safe)
-            const backupTimer = setTimeout(() => {
-                if (!connectionDone) {
-                    connectionDone = true;
-                    console.warn("База даних не відповіла вчасно. Увімкнено локальний сесійний режим!");
-                    bootstrapUserUI(userStuff);
-                    revealGameHubScreen();
-                }
-            }, 2500);
+            if (!loginInput || !passInput) {
+                alert("Заповни всі поля!");
+                return;
+            }
 
             try {
-                // Перевірка фінансів у таблиці user_money
-                let { data: balanceRows } = await supabase.from('user_money').select('*').eq('login', sessionUser);
-                if (balanceRows && balanceRows.length > 0) {
-                    let record = balanceRows[0];
-                    userWalletUsd = parseFloat(record.money) || 0.00;
-                    userWalletBb = parseInt(record.bobr_coins) || 0;
-                    userCreditDebt = parseFloat(record.debt) || 0.00;
-                    userStockShares = parseInt(record.stocks) || 0;
-                } else {
-                    // Реєстрація нового рахунку
-                    await supabase.from('user_money').insert({ login: sessionUser, money: 100.00, bobr_coins: 0 });
+                const { error: regError } = await mySupabase
+                    .from('passcodes')
+                    .insert([{ login: loginInput, password: passInput }]);
+
+                if (regError) {
+                    alert("Помилка реєстрації: " + regError.message);
+                    return;
                 }
 
-                // Перевірка майна у таблиці stuff (ПОВНИЙ БАГФІКС ЗБЕРЕЖЕННЯ)
-                let { data: stuffRows } = await supabase.from('stuff').select('*').eq('login', sessionUser);
-                if (stuffRows && stuffRows.length > 0) {
-                    userStuff = stuffRows[0];
-                } else {
-                    await supabase.from('stuff').insert({ login: sessionUser, owned_items: "", has_passport: false });
-                }
-
+                await mySupabase.from('user_money').insert([{ login: loginInput, money: 0 }]);
+                alert("Реєстрація успішна! Тепер увійдіть.");
+                toggleForms('login');
             } catch (err) {
-                console.error("Supabase Error:", err);
-            } finally {
-                if (!connectionDone) {
-                    clearTimeout(backupTimer);
-                    connectionDone = true;
-                    userInventoryString = userStuff.owned_items || "";
-                    bootstrapUserUI(userStuff);
-                    revealGameHubScreen();
-                    
-                    // Запуск циклів та вебсокетів
-                    startGlobalClockCycles();
-                    downloadChatLogs();
-                    hookRealtimeChannels();
+                alert("Критична помилка: " + err.message);
+            }
+        }
+
+        async function loginUser() {
+            playMusic();
+            const loginIn = document.getElementById('login-username').value.trim();
+            const passIn = document.getElementById('login-password').value.trim();
+
+            if (!loginIn || !passIn) {
+                alert("Введіть логін та пароль!");
+                return;
+            }
+
+            try {
+                const { data, error } = await mySupabase
+                    .from('passcodes')
+                    .select('*')
+                    .eq('login', loginIn)
+                    .eq('password', passIn);
+
+                if (error) {
+                    alert("Помилка бази даних: " + error.message);
+                    return;
                 }
+
+                if (data && data.length > 0) {
+                    alert("Вхід успішний!");
+                    currentGlobalUser = loginIn;
+
+                    document.body.classList.add('logged-in');
+                    document.getElementById('main-header').classList.add('logged-in-header');
+                    document.getElementById('header-title').innerText = "🦫 ЛОГІВО ПРЕЗЕДЕНТА БОБРІВ";
+                    document.getElementById('menu-trigger').classList.remove('hidden');
+
+                    await fetchUserMoney();
+                    document.getElementById('login-box').classList.add('hidden');
+                    showSection('balance-sec');
+                } else {
+                    alert("Неправильний логін або пароль!");
+                }
+            } catch (err) {
+                alert("Не вдалося підключитися: " + err.message);
             }
         }
 
-        function revealGameHubScreen() {
-            document.getElementById('auth-overlay').style.display = 'none';
-            document.getElementById('main-game-hub').style.display = 'block';
+        async function fetchUserMoney() {
+            try {
+                const { data, error } = await mySupabase
+                    .from('user_money')
+                    .select('money')
+                    .eq('login', currentGlobalUser);
+
+                if (data && data.length > 0) {
+                    currentGlobalMoney = parseFloat(data[0].money);
+                } else {
+                    await mySupabase.from('user_money').insert([{ login: currentGlobalUser, money: 0 }]);
+                    currentGlobalMoney = 0.0;
+                }
+
+                syncMoneyUI();
+            } catch (e) {
+                console.error(e);
+            }
         }
 
-        // Відображення даних в інтерфейсі
-        function bootstrapUserUI(stuff) {
-            document.getElementById('core-balance-usd').innerText = userWalletUsd.toFixed(2);
-            document.getElementById('core-balance-bb').innerText = userWalletBb;
-            document.getElementById('core-asset-stocks').innerText = userStockShares + " шт.";
-            document.getElementById('core-asset-list').innerText = userInventoryString || "Майно відсутнє";
-
-            if (stuff && stuff.has_passport) {
-                document.getElementById('core-passport-status').innerText = "АКТИВНИЙ ДЕРЖАВНИЙ ID";
-                document.getElementById('core-passport-line').classList.add('asset-line-verified');
-            } else {
-                document.getElementById('core-passport-status').innerText = "ВІДСУТНІЙ (Купіть в універмазі)";
-                document.getElementById('core-passport-line').classList.remove('asset-line-verified');
-            }
-
-            const debtBlock = document.getElementById('core-debt-banner');
-            if (userCreditDebt > 0) {
-                debtBlock.style.display = "block";
-                document.getElementById('core-debt-text').innerText = `Кредитна заборгованість: ${userCreditDebt.toFixed(2)} $ (+10% кожні 30 сек)`;
-            } else {
-                debtBlock.style.display = "none";
-            }
-            drawStockGraph();
+        function syncMoneyUI() {
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+            updateStatusText();
         }
 
-        // Швидке оновлення інтерфейсу без смикання бази даних
-        function localRefreshUI() {
-            document.getElementById('core-balance-usd').innerText = userWalletUsd.toFixed(2);
-            document.getElementById('core-balance-bb').innerText = userWalletBb;
-            document.getElementById('core-asset-stocks').innerText = userStockShares + " шт.";
-            document.getElementById('core-asset-list').innerText = userInventoryString || "Майно відсутнє";
+        async function saveMoneyToCloud() {
+            await mySupabase
+                .from('user_money')
+                .upsert({ login: currentGlobalUser, money: currentGlobalMoney });
+        }
+
+        async function clickBeaver() {
+            currentGlobalMoney += (0.10 * clickModifier);
+            syncMoneyUI();
+            await saveMoneyToCloud();
+        }
+
+        async function buyProduct(name, price, btnId) {
+            if (currentGlobalMoney < price) {
+                document.getElementById('shop-status-message').innerText = "У вас недостатньо бобро-баксів! Ідіть працювати на лісоповал. 🔨";
+                return;
+            }
+
+            selectedProduct = name;
+            selectedPrice = price;
+            currentBtnId = btnId;
+
+            const shopContainer = document.getElementById('shop-items-container');
+            shopContainer.classList.remove('bass-mode');
+            shopContainer.classList.add('hidden');
             
-            const debtBlock = document.getElementById('core-debt-banner');
-            if (userCreditDebt > 0) {
-                debtBlock.style.display = "block";
-                document.getElementById('core-debt-text').innerText = `Кредитна заборгованість: ${userCreditDebt.toFixed(2)} $ (+10% кожні 30 сек)`;
-            } else {
-                debtBlock.style.display = "none";
+            document.getElementById('shop-loading').classList.remove('hidden');
+            document.getElementById('shop-status-message').innerText = "";
+
+            setTimeout(async function() {
+                currentGlobalMoney -= selectedPrice;
+                syncMoneyUI();
+                await saveMoneyToCloud();
+
+                document.getElementById('shop-loading').classList.add('hidden');
+                document.getElementById('shop-delivery').classList.remove('hidden');
+                document.getElementById('delivery-item-name').innerText = selectedProduct;
+            }, 3000);
+        }
+
+        function confirmDelivery() {
+            const method = document.getElementById('delivery-method').value;
+            const dest = document.getElementById('delivery-destination').value;
+
+            document.getElementById('shop-delivery').classList.add('hidden');
+            purchasedItems.push(currentBtnId);
+
+            // Додаємо річ в інвентар безпосередньо
+            userInventory[selectedProduct] = (userInventory[selectedProduct] || 0) + 1;
+            renderInventory();
+
+            document.getElementById('shop-status-message').innerHTML = `
+                <span style="color: #4edf7a;">✔ Успішно списано ${selectedPrice.toFixed(2)} $! Товар додано в інвентар!</span><br><br>
+                Ваше замовлення [<b>${selectedProduct}</b>] прийнято!<br>
+                Спосіб видачі: <b>${method}</b><br>
+                Пункт призначення: <b>${dest}</b><br><br>
+                <span style="color: #ff4d4d; font-size: 1.2rem;">⚠ Помилка логістики: Всі бобри-кур'єри зараз зайняті поїданням дерев. Ваша реальна доставка затримується приблизно на 50 років! Але в інвентарі грати можна вже зараз. 🦫🪵</span>
+            `;
+            addChatMessage("Магазин", `Користувач ${currentGlobalUser} придбав ${selectedProduct}!`);
+        }
+
+        // ВДОСКОНАЛЕНЕ КАЗИНО
+        function spinSlots() {
+            const betSelect = document.getElementById('casino-bet-amount');
+            const bet = parseFloat(betSelect.value);
+            const statusNode = document.getElementById('casino-status-message');
+
+            if(currentGlobalMoney < bet) {
+                statusNode.innerText = "У вас немає стільки грошей для ставки в казино!";
+                statusNode.style.color = "#ff4d4d";
+                return;
             }
-        }
 
-        // Клікер Лісоповалу (+1.50$)
-        async function recordWoodClick(e) {
-            userWalletUsd += 1.50;
-            document.getElementById('core-balance-usd').innerText = userWalletUsd.toFixed(2);
-
-            // Анімація вилітаючих цифр
-            const area = document.getElementById('wood-clicker-node');
-            const box = area.getBoundingClientRect();
-            const pop = document.createElement('div');
-            pop.className = 'click-pop';
-            pop.innerText = '+1.50$';
-            let posX = (e && e.clientX) ? e.clientX - box.left : 80;
-            let posY = (e && e.clientY) ? e.clientY - box.top : 80;
-            pop.style.left = posX + 'px';
-            pop.style.top = posY + 'px';
-            area.appendChild(pop);
-            setTimeout(() => pop.remove(), 500);
-
-            // Збереження
-            await supabase.from('user_money').update({ money: userWalletUsd }).eq('login', sessionUser);
-        }
-
-        // Робота перукарні Бобра
-        async function recordBarberClick() {
-            if (barberClicksLeft <= 0) return;
-            barberClicksLeft--;
-            const statusLabel = document.getElementById('core-barber-label');
-            const imgNode = document.getElementById('core-barber-img');
-            statusLabel.innerText = `Залишилося зрізати: ${barberClicksLeft} пасм хутра`;
-
-            if (barberClicksLeft === 0) {
-                imgNode.src = "cutted.png";
-                statusLabel.innerText = "✂ Клієнт ідеально підстрижений!";
-                userWalletUsd += 5.00;
-                document.getElementById('core-balance-usd').innerText = userWalletUsd.toFixed(2);
-
-                await supabase.from('user_money').update({ money: userWalletUsd }).eq('login', sessionUser);
-                alert("💈 Перукарня: Обслуговування VIP-моделі завершено! Отримано премію +5.00 $");
-
-                setTimeout(() => {
-                    barberClicksLeft = 15;
-                    imgNode.src = "nocut.png";
-                    statusLabel.innerText = "Залишилося зрізати: 15 пасм хутра";
-                }, 7000);
-            }
-        }
-
-        // Казино "Три Сокири"
-        async function triggerCasinoSpin() {
-            const wagerField = document.getElementById('core-casino-wager');
-            let wager = parseFloat(wagerField.value) || 0;
-            if (wager < 5) { alert("❌ Мінімальна ставка в казино — 5 $"); return; }
-            if (userWalletUsd < wager) { alert("❌ У вас недостатньо коштів для цієї ставки!"); return; }
-
-            userWalletUsd -= wager;
-            document.getElementById('core-balance-usd').innerText = userWalletUsd.toFixed(2);
-            await supabase.from('user_money').update({ money: userWalletUsd }).eq('login', sessionUser);
-
-            const screen = document.getElementById('core-casino-screen');
-            screen.innerText = "🎰 ОБЕРТАННЯ... 🎰";
-            let ticks = 0;
-            const emojiPool = ["🪵", "🪓", "🪙", "💎", "🍒"];
+            currentGlobalMoney -= bet;
+            syncMoneyUI();
+            statusNode.innerText = "Барабани крутяться... Ставки зроблені!";
+            statusNode.style.color = "#ff9f1c";
             
-            let rollInterval = setInterval(() => {
-                screen.innerText = `${emojiPool[Math.floor(Math.random() * emojiPool.length)]} | ${emojiPool[Math.floor(Math.random() * emojiPool.length)]} | ${emojiPool[Math.floor(Math.random() * emojiPool.length)]}`;
-                ticks++;
-                if (ticks > 8) {
-                    clearInterval(rollInterval);
-                    evaluateCasinoOdds(wager);
+            const symbols = ["🍒", "🪵", "🦫", "💎", "🍋"];
+            let btn = document.getElementById('spin-slots-btn');
+            btn.disabled = true;
+
+            let counter = 0;
+            let interval = setInterval(() => {
+                let s1 = symbols[Math.floor(Math.random() * symbols.length)];
+                let s2 = symbols[Math.floor(Math.random() * symbols.length)];
+                let s3 = symbols[Math.floor(Math.random() * symbols.length)];
+                document.getElementById('slots-screen').innerText = `${s1} ${s2} ${s3}`;
+                counter++;
+                if(counter > 10) {
+                    clearInterval(interval);
+                    
+                    // Фінальний вибір результату
+                    let f1 = symbols[Math.floor(Math.random() * symbols.length)];
+                    let f2 = symbols[Math.floor(Math.random() * symbols.length)];
+                    let f3 = symbols[Math.floor(Math.random() * symbols.length)];
+                    
+                    // Для спрощення тестування дамо трохи вищий шанс виграшу бобрів
+                    if(Math.random() > 0.85) { f1 = "🦫"; f2 = "🦫"; f3 = "🦫"; }
+
+                    document.getElementById('slots-screen').innerText = `${f1} ${f2} ${f3}`;
+                    
+                    btn.disabled = false;
+                    evaluateCasinoResults(f1, f2, f3, bet, statusNode);
                 }
             }, 100);
         }
 
-        async function evaluateCasinoOdds(bet) {
-            const screen = document.getElementById('core-casino-screen');
-            const luck = Math.random();
-            if (luck > 0.76) {
-                let cryptoBonus = Math.floor(Math.random() * 6) + 2;
-                userWalletBb += cryptoBonus;
-                let winCash = bet * 3;
-                userWalletUsd += winCash;
-                screen.innerText = `💎 ДЖЕКПОТ: +${winCash}$ & +${cryptoBonus}BB!`;
-            } else if (luck > 0.46) {
-                let winCash = Math.floor(bet * 1.5);
-                userWalletUsd += winCash;
-                screen.innerText = `🪵 ВИГРАШ: +${winCash} $`;
+        async function evaluateCasinoResults(f1, f2, f3, bet, statusNode) {
+            if(f1 === "🦫" && f2 === "🦫" && f3 === "🦫") {
+                let win = bet * 50;
+                currentGlobalMoney += win;
+                statusNode.innerText = `🔥 ДЖЕКПОТ ТРЬОХ БОБРІВ!! Ви виграли ${win.toFixed(2)} $ !!!`;
+                statusNode.style.color = "#4edf7a";
+                addChatMessage("🎰 КАЗИНО",🔥 `${currentGlobalUser} зірвав ДЖЕКПОТ БОБРІВ на суму ${win} $!`);
+            } else if (f1 === f2 && f2 === f3) {
+                let win = bet * 10;
+                currentGlobalMoney += win;
+                statusNode.innerText = `🎉 Потрійний збіг! Виграш: ${win.toFixed(2)} $!`;
+                statusNode.style.color = "#4edf7a";
+            } else if (f1 === f2 || f2 === f3 || f1 === f3) {
+                let win = bet * 1.5;
+                currentGlobalMoney += win;
+                statusNode.innerText = `💵 Пара збіглася. Ви повернули та заробили: ${win.toFixed(2)} $`;
+                statusNode.style.color = "#ff9f1c";
             } else {
-                screen.innerText = "❌ ПРОГРАШ!";
+                statusNode.innerText = "❌ Повний програш. Спробуйте ще раз, бобри не здаються!";
+                statusNode.style.color = "#ff4d4d";
             }
-            await supabase.from('user_money').update({ money: userWalletUsd, bobr_coins: userWalletBb }).eq('login', sessionUser);
-            localRefreshUI();
+            syncMoneyUI();
+            await saveMoneyToCloud();
         }
 
-        // ЛОГІКА МАГАЗИНУ: Зміна категорій товарів
-        function toggleMarketSection(categoryCode, btnElement) {
-            document.querySelectorAll('.market-tab-btn').forEach(b => b.classList.remove('active-tab'));
-            if(btnElement) btnElement.classList.add('active-tab');
+        // БІРЖОВА ТОРГІВЛЯ
+        async function tradeStock(ticker, action) {
+            const statusNode = document.getElementById('stock-status-message');
+            let currentPrice = stocks[ticker].price;
 
-            const grid = document.getElementById('core-market-grid');
-            grid.innerHTML = "";
-
-            const products = CENTRAL_MARKET_DB[categoryCode] || [];
-            products.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'market-item-card';
-                card.innerHTML = `
-                    <img class="market-item-img" src="${p.img}" alt="${p.name}">
-                    <div class="market-item-name">${p.name}</div>
-                    <div class="market-item-cost">${p.cost.toFixed(2)} $</div>
-                    <button class="btn-vibe btn-success" style="padding: 8px 15px; font-size: 13px;" onclick="checkoutMarketItem('${p.id}', ${p.cost}, '${p.name}')">Придбати</button>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        // ОБРОБКА ПОКУПКИ ТОВАРУ (З ПОВНИМ БАГФІКСОМ ДЛЯ STUFF)
-        async function checkoutMarketItem(id, price, fullName) {
-            if (userWalletUsd < price) { alert("❌ У вас недостатньо грошей на балансі!"); return; }
-
-            // Перевірка на наявність дублікатів в інвентарі
-            let itemsArray = userInventoryString.split(',').map(i => i.trim()).filter(Boolean);
-            if (itemsArray.includes(fullName)) { alert("❌ У вас вже є цей унікальний предмет/ліцензія!"); return; }
-
-            userWalletUsd -= price;
-            itemsArray.push(fullName);
-            userInventoryString = itemsArray.join(', ');
-
-            // Оновлення інтерфейсу на льоту
-            document.getElementById('core-balance-usd').innerText = userWalletUsd.toFixed(2);
-            document.getElementById('core-asset-list').innerText = userInventoryString;
-
-            let checkPassport = itemsArray.includes("📜 ID-Паспорт Лісу");
-            if (checkPassport) {
-                document.getElementById('core-passport-status').innerText = "АКТИВНИЙ ДЕРЖАВНИЙ ID";
-                document.getElementById('core-passport-line').classList.add('asset-line-verified');
+            if(action === 'buy') {
+                if(currentGlobalMoney < currentPrice) {
+                    statusNode.innerText = "Недостатньо грошей для покупки акції!";
+                    statusNode.style.color = "#ff4d4d";
+                    return;
+                }
+                currentGlobalMoney -= currentPrice;
+                stocks[ticker].owned += 1;
+                statusNode.innerText = `Успішно куплено 1 акцію ${ticker}`;
+                statusNode.style.color = "#4edf7a";
+            } else if(action === 'sell') {
+                if(stocks[ticker].owned <= 0) {
+                    statusNode.innerText = "У вас немає акцій цієї компанії для продажу!";
+                    statusNode.style.color = "#ff4d4d";
+                    return;
+                }
+                stocks[ticker].owned -= 1;
+                currentGlobalMoney += currentPrice;
+                statusNode.innerText = `Успішно продано 1 акцію ${ticker} за ціною ${currentPrice} $`;
+                statusNode.style.color = "#4edf7a";
             }
 
-            // Надійний запис в Supabase
-            await supabase.from('user_money').update({ money: userWalletUsd }).eq('login', sessionUser);
-            await supabase.from('stuff').update({ owned_items: userInventoryString, has_passport: checkPassport }).eq('login', sessionUser);
-
-            alert(`✅ Успішно придбано: ${fullName}! Товар внесено в державні реєстри.`);
+            document.getElementById(`own-${ticker.toLowerCase()}`).innerText = stocks[ticker].owned;
+            syncMoneyUI();
+            await saveMoneyToCloud();
         }
 
-        // Візуалізація графіка біржі деревини
-        function drawStockGraph() {
-            const container = document.getElementById('core-stock-graph');
-            if (!container) return;
-            container.innerHTML = "";
-            let highestPoint = Math.max(...stockGraphRecords);
-            stockGraphRecords.forEach(val => {
-                const pillar = document.createElement('div');
-                pillar.className = 'graph-pillar';
-                pillar.style.height = ((val / highestPoint) * 100) + '%';
-                pillar.style.backgroundColor = (stockGraphRecords[stockGraphRecords.length - 1] >= stockGraphRecords[stockGraphRecords.length - 2]) ? "var(--bobr-green)" : "var(--bobr-red)";
-                container.appendChild(pillar);
-            });
-        }
+        function startLoading() {
+            document.getElementById('buy-btn').classList.add('hidden');
+            document.getElementById('loading-section').classList.remove('hidden');
+            document.getElementById('status-message').innerText = "";
 
-        // Купівля та Продаж акцій WOOD
-        async function purchaseMarketStock() {
-            if (userWalletUsd < liveStockValue) { alert("❌ На рахунку не вистачає грошей!"); return; }
-            userWalletUsd -= liveStockValue;
-            userStockShares++;
-            localRefreshUI();
-            await supabase.from('user_money').update({ money: userWalletUsd, stocks: userStockShares }).eq('login', sessionUser);
-        }
-
-        async function liquidateMarketStock() {
-            if (userStockShares <= 0) { alert("❌ У вас немає цінних паперів для продажу!"); return; }
-            userWalletUsd += liveStockValue;
-            userStockShares--;
-            localRefreshUI();
-            await supabase.from('user_money').update({ money: userWalletUsd, stocks: userStockShares }).eq('login', sessionUser);
-        }
-
-        // Завантаження попередньої історії чату
-        async function downloadChatLogs() {
-            try {
-                let { data: rows } = await supabase.from('chat').select('*').order('id', { ascending: false }).limit(25);
-                if (rows) {
-                    const box = document.getElementById('core-chat-stream');
-                    box.innerHTML = "";
-                    rows.reverse().forEach(m => { renderSingleMsgInUI(m.login, m.text); });
-                }
-            } catch (ex) { console.error("Chat loading issues:", ex); }
-        }
-
-        // Відправка повідомлення в реалтайм чат
-        async function broadcastChatMessage() {
-            const inputNode = document.getElementById('core-chat-node-input');
-            let text = inputNode.value.trim();
-            if (!text) return;
-            inputNode.value = "";
-            try {
-                await supabase.from('chat').insert({ login: sessionUser, text: text });
-            } catch(err) {}
-        }
-
-        function renderSingleMsgInUI(author, message) {
-            const stream = document.getElementById('core-chat-stream');
-            const node = document.createElement('div');
-            node.className = 'msg-line';
-            node.innerHTML = `<b>${author}:</b> ${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
-            stream.appendChild(node);
-            stream.scrollTop = stream.scrollHeight;
-        }
-
-        // Підключення до WebSockets каналів змін даних (Realtime)
-        function hookRealtimeChannels() {
-            supabase.channel('public-realtime-hub')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat' }, payload => {
-                    if (payload.new) renderSingleMsgInUI(payload.new.login, payload.new.text);
-                })
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_signals' }, payload => {
-                    if (payload.new) {
-                        let alertSignal = payload.new;
-                        if (!hasInitialAdminHook) {
-                            systemLastReloadMarker = alertSignal.id;
-                            hasInitialAdminHook = true;
-                        } else {
-                            if (alertSignal.id !== systemLastReloadMarker && alertSignal.command === "RELOAD_ALL") {
-                                alert("🚨 Глобальний сигнал адміна: Оновлення серверного коду. Сторінка перезавантажується!");
-                                location.reload();
-                            }
-                        }
-                    }
-                })
-                .subscribe();
-        }
-
-        // Таймери оновлення життєвих циклів (Біржа та Кредити)
-        function startGlobalClockCycles() {
-            // Ринок акцій оновлюється раз на 12 секунд
-            setInterval(() => {
-                let shiftPercent = (Math.random() * 22 - 11);
-                liveStockValue += (liveStockValue * (shiftPercent / 100));
-                if (liveStockValue < 5) liveStockValue = 5;
-                stockGraphRecords.push(Math.round(liveStockValue));
-                if (stockGraphRecords.length > 14) stockGraphRecords.shift();
-                
-                const indicator = document.getElementById('core-stock-direction');
-                if (indicator) {
-                    document.getElementById('core-stock-val').innerText = liveStockValue.toFixed(2) + " $";
-                    indicator.innerText = (shiftPercent >= 0 ? "+" : "") + shiftPercent.toFixed(2) + "%";
-                    indicator.style.color = shiftPercent >= 0 ? "var(--bobr-green)" : "var(--bobr-red)";
-                }
-                drawStockGraph();
-            }, 12000);
-
-            // Кредити та борг (+10% кожні 30 секунд)
-            setInterval(async () => {
-                if (userCreditDebt > 0) {
-                    userCreditDebt += userCreditDebt * 0.10;
-                    localRefreshUI();
-                    await supabase.from('user_money').update({ debt: userCreditDebt }).eq('login', sessionUser);
-                }
-            }, 30000);
-        }
-
-        // Робота Аудіо-плеєра
-        function toggleBassRadio() {
-            const player = document.getElementById('audio-bass-engine');
-            const label = document.getElementById('core-music-label');
-            if (!radioPlaying) {
-                player.play().then(() => {
-                    radioPlaying = true;
-                    label.innerText = "УВМКНЕНO (БАСИТЬ)";
-                    label.style.color = "var(--bobr-green)";
-                }).catch(() => { alert("Клацніть спочатку мишкою по екрану гри!"); });
-            } else {
-                player.pause();
-                radioPlaying = false;
-                label.innerText = "ВИМКНЕНO";
-                label.style.color = "var(--bobr-red)";
-            }
+            setTimeout(function() {
+                document.getElementById('loading-section').classList.add('hidden');
+                document.getElementById('status-message').innerText = "Всі картки вже ізрасходувалися! 🦫 Почекайте до наступного завозу бобрів.";
+            }, 10000);
         }
     </script>
 </body>
