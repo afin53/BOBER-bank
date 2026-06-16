@@ -587,6 +587,14 @@
                 <p class="price-tag">5.00 $</p>
                 <button id="btn-dollar" onclick="buyProduct('Магічна Купюра (5$)', 5.00, 'btn-dollar')">Купити 5 баксів</button>
             </div>
+
+            <!-- БОБРО СТИЛЬ - Дорога категорія -->
+            <div class="shop-item" style="border: 3px solid #4edf7a; background-color: #1f3a2a;">
+                <h3 style="color:#4edf7a;">👕 Бобро Стиль</h3>
+                <p style="font-size:0.9rem; color:#ffbf69;">Відкриває кастомізацію бобра через емодзі</p>
+                <p class="price-tag" style="color:#4edf7a;">2 000 000 $</p>
+                <button id="btn-bobr-style" onclick="buyBoberStyleCategory()" style="background-color:#4edf7a; color:#1e1e24;">Купити Бобро Стиль</button>
+            </div>
         </div>
 
         <div id="shop-loading" class="hidden">
@@ -718,11 +726,16 @@
             <span class="chat-empty-msg">Завантаження повідомлень... 🦫</span>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div style="font-size:0.85rem; color:#777;">🦫 Бобро-чат у реальному часі</div>
-            <button onclick="toggleChatSound()" style="width:auto; padding:4px 12px; font-size:0.8rem; background:#3f3f50; border:1px solid #ff9f1c;">
-                <span id="chat-sound-icon">🔊</span> <span id="chat-sound-text">Звук</span>
-            </button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap: wrap; gap: 6px;">
+            <div style="font-size:0.85rem; color:#777;">🦫 Бобро-чат</div>
+            <div style="display:flex; gap:6px;">
+                <button onclick="toggleChatSound()" style="width:auto; padding:4px 10px; font-size:0.75rem; background:#3f3f50; border:1px solid #ff9f1c;">
+                    <span id="chat-sound-icon">🔊</span>
+                </button>
+                <button onclick="toggleChatPolling()" style="width:auto; padding:4px 10px; font-size:0.75rem; background:#3f3f50; border:1px solid #ff9f1c;">
+                    <span id="chat-poll-icon">🔄</span> <span id="chat-poll-text">Polling</span>
+                </button>
+            </div>
         </div>
 
         <div class="chat-input-row">
@@ -730,6 +743,48 @@
             <button class="chat-send-btn" onclick="sendChatMessage()">📤</button>
         </div>
         <div id="chat-status"></div>
+    </div>
+
+    <!-- 👕 БОБРО СТИЛЬ -->
+    <div id="bobr-style-sec" class="container hidden bank-section">
+        <h2>👕 Бобро Стиль</h2>
+        <p>Прикрашай свого бобра емодзі!</p>
+
+        <div style="font-size: 5rem; margin: 20px 0; line-height: 1;" id="custom-beaver-display">
+            🦫
+        </div>
+
+        <h3>Доступні аксесуари</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 15px;">
+            <div class="shop-item" style="margin:0; padding:12px;">
+                <div style="font-size:2rem;">😎</div>
+                <b>Окуляри</b><br>
+                <span style="color:#4edf7a;">15 000 $</span><br>
+                <button onclick="equipAccessory('😎', 15000)">Одягнути</button>
+            </div>
+            <div class="shop-item" style="margin:0; padding:12px;">
+                <div style="font-size:2rem;">👑</div>
+                <b>Корона</b><br>
+                <span style="color:#4edf7a;">150 000 $</span><br>
+                <button onclick="equipAccessory('👑', 150000)">Одягнути</button>
+            </div>
+            <div class="shop-item" style="margin:0; padding:12px;">
+                <div style="font-size:2rem;">💍</div>
+                <b>Золота Ланцюжок</b><br>
+                <span style="color:#4edf7a;">35 000 $</span><br>
+                <button onclick="equipAccessory('💍', 35000)">Одягнути</button>
+            </div>
+            <div class="shop-item" style="margin:0; padding:12px;">
+                <div style="font-size:2rem;">🎩</div>
+                <b>Капелюх</b><br>
+                <span style="color:#4edf7a;">80 000 $</span><br>
+                <button onclick="equipAccessory('🎩', 80000)">Одягнути</button>
+            </div>
+        </div>
+
+        <div style="margin-top:20px;">
+            <button onclick="resetAccessories()" style="background:#ff4d4d;">Скинути все</button>
+        </div>
     </div>
 
     <!-- 📢 ОГОЛОШЕННЯ БОБРА -->
@@ -770,6 +825,11 @@
         let chatLoaded = false;
         let chatSoundEnabled = true;
         let chatPollInterval = null;   // для polling кожні 3 секунди
+        let chatPollingEnabled = true;
+
+        // Бобро Стиль
+        let hasBoberStyle = false;
+        let equippedAccessories = []; // масив одягнених емодзі
 
         // ОГОЛОШЕННЯ: стан
         let announceSubscription = null;
@@ -964,6 +1024,31 @@
             } else {
                 icon.innerText = '🔇';
                 text.innerText = 'Без звуку';
+            }
+        }
+
+        function toggleChatPolling() {
+            chatPollingEnabled = !chatPollingEnabled;
+
+            const icon = document.getElementById('chat-poll-icon');
+            const text = document.getElementById('chat-poll-text');
+
+            if (chatPollingEnabled) {
+                icon.innerText = '🔄';
+                text.innerText = 'Polling';
+                // Якщо чат відкритий — запускаємо polling
+                if (document.getElementById('chat-sec').classList.contains('hidden') === false && !chatPollInterval) {
+                    chatPollInterval = setInterval(() => {
+                        loadChatMessages();
+                    }, 3000);
+                }
+            } else {
+                icon.innerText = '⏸️';
+                text.innerText = 'Вимкнено';
+                if (chatPollInterval) {
+                    clearInterval(chatPollInterval);
+                    chatPollInterval = null;
+                }
             }
         }
 
@@ -1171,11 +1256,13 @@
                     chatLoaded = true;
                 }
 
-                // Запускаємо polling кожні 3 секунди (як просив)
+                // Запускаємо polling кожні 3 секунди (якщо увімкнено)
                 if (chatPollInterval) clearInterval(chatPollInterval);
-                chatPollInterval = setInterval(() => {
-                    loadChatMessages();
-                }, 3000);
+                if (chatPollingEnabled) {
+                    chatPollInterval = setInterval(() => {
+                        loadChatMessages();
+                    }, 3000);
+                }
 
                 setMusicState(false);
                 stopFlyingWords();
@@ -1719,6 +1806,100 @@
                 Пункт призначення: <b>${dest}</b><br><br>
                 <span style="color: #ff4d4d; font-size: 1.2rem;">⚠ Помилка логістики: Всі бобри-кур'єри зараз зайняті поїданням дерев. Ваша доставка затримується приблизно на 50 років! 🦫🪵</span>
             `;
+        }
+
+        // Купівля категорії "Бобро Стиль"
+        function buyBoberStyleCategory() {
+            const price = 2000000;
+
+            if (currentGlobalMoney < price) {
+                document.getElementById('shop-status-message').innerText = "Недостатньо бобро-баксів для такої розкоші!";
+                document.getElementById('shop-status-message').style.color = "#ff4d4d";
+                return;
+            }
+
+            currentGlobalMoney -= price;
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+            updateStatusText();
+
+            hasBoberStyle = true;
+            localStorage.setItem('hasBoberStyle', 'true');
+
+            // Додаємо новий пункт меню (якщо ще немає)
+            addBoberStyleToMenu();
+
+            document.getElementById('shop-status-message').innerHTML = `
+                <span style="color:#4edf7a; font-size:1.1rem;">✅ Вітаємо!</span><br><br>
+                Ти придбав <b>Бобро Стиль</b> за 2 000 000 $!<br>
+                Тепер у тебе з'явився новий розділ <b>👕 Бобро Стиль</b> у меню.<br>
+                Там ти можеш прикрашати свого бобра емодзі!
+            `;
+
+            // Приховуємо кнопку покупки
+            const btn = document.getElementById('btn-bobr-style');
+            if (btn) btn.style.display = 'none';
+        }
+
+        function addBoberStyleToMenu() {
+            // Перевіряємо, чи вже є пункт
+            const sidebar = document.querySelector('#sidebar ul');
+            if (!sidebar) return;
+
+            // Якщо ще немає — додаємо
+            if (!document.getElementById('menu-bobr-style')) {
+                const li = document.createElement('li');
+                li.id = 'menu-bobr-style';
+                li.innerHTML = '👕 Бобро Стиль';
+                li.onclick = () => showSection('bobr-style-sec');
+                sidebar.appendChild(li);
+            }
+        }
+
+        function equipAccessory(emoji, price) {
+            if (!hasBoberStyle) {
+                alert("Спочатку придбай категорію 'Бобро Стиль'!");
+                return;
+            }
+            if (currentGlobalMoney < price) {
+                alert("Недостатньо грошей!");
+                return;
+            }
+
+            currentGlobalMoney -= price;
+            document.getElementById('user-money-display').innerText = currentGlobalMoney.toFixed(2);
+            document.getElementById('clicker-money').innerText = currentGlobalMoney.toFixed(2);
+
+            if (!equippedAccessories.includes(emoji)) {
+                equippedAccessories.push(emoji);
+            }
+            updateCustomBeaver();
+
+            // Прикольна анімація при одяганні
+            const display = document.getElementById('custom-beaver-display');
+            if (display) {
+                display.style.transition = 'transform 0.2s ease';
+                display.style.transform = 'scale(1.3)';
+                setTimeout(() => {
+                    display.style.transform = 'scale(1)';
+                }, 200);
+            }
+        }
+
+        function updateCustomBeaver() {
+            const display = document.getElementById('custom-beaver-display');
+            if (!display) return;
+
+            let html = '🦫';
+            equippedAccessories.forEach(em => {
+                html += em;
+            });
+            display.innerHTML = html;
+        }
+
+        function resetAccessories() {
+            equippedAccessories = [];
+            updateCustomBeaver();
         }
 
         function startLoading() {
