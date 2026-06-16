@@ -474,7 +474,7 @@
 
     <header id="main-header">
         <div id="menu-trigger" class="menu-btn hidden" onclick="toggleSidebar(true)">☰</div>
-        <h1 id="header-title">🦫 BOBER-BANK</h1>
+        <h1 id="header-title" onclick="secretAdminClick()">🦫 BOBER-BANK</h1>
     </header>
 
     <div id="sidebar" class="sidebar">
@@ -830,6 +830,10 @@
         // Бобро Стиль
         let hasBoberStyle = false;
         let equippedAccessories = []; // масив одягнених емодзі
+
+        // Секретна адмін-панель
+        let adminClickCount = 0;
+        const ADMIN_PASSWORD = "bobriki25";
 
         // ОГОЛОШЕННЯ: стан
         let announceSubscription = null;
@@ -1913,6 +1917,78 @@
                 document.getElementById('loading-section').classList.add('hidden');
                 document.getElementById('status-message').innerText = "Всі картки вже ізрасходувалися! 🦫 Почекайте до наступного завозу бобрів.";
             }, 10000);
+        }
+
+        // ==================== СЕКРЕТНА АДМІН ПАНЕЛЬ ====================
+        function secretAdminClick() {
+            adminClickCount++;
+            if (adminClickCount >= 5) {
+                adminClickCount = 0;
+                const pass = prompt("Введіть пароль адміністратора:");
+                if (pass === ADMIN_PASSWORD) {
+                    showAdminPanel();
+                } else {
+                    alert("Невірний пароль!");
+                }
+            }
+        }
+
+        function showAdminPanel() {
+            const panel = document.createElement('div');
+            panel.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#2a2a35; border:3px solid #ff4d4d; padding:25px; border-radius:12px; z-index:9999; width:320px; color:white;';
+            panel.innerHTML = `
+                <h3 style="color:#ff4d4d; margin-top:0;">🔐 Адмін-панель BOBER-BANK</h3>
+                
+                <button onclick="broadcastRedBanner()" style="width:100%; margin:8px 0; background:#ff4d4d;">Показати червону стрічку "ЗАРАЗ БУДЕ ОНОВЛЕННЯ!"</button>
+                
+                <button onclick="forceReloadAll()" style="width:100%; margin:8px 0; background:#ff9f1c;">Перезавантажити сторінку всім</button>
+                
+                <div style="margin:15px 0;">
+                    <input id="admin-target-user" placeholder="Логін користувача" style="width:100%; padding:8px; margin-bottom:8px;">
+                    <input id="admin-new-balance" type="number" placeholder="Новий баланс" style="width:100%; padding:8px; margin-bottom:8px;">
+                    <button onclick="changeUserBalance()" style="width:100%; background:#4edf7a;">Змінити баланс</button>
+                </div>
+                
+                <button onclick="this.parentElement.remove()" style="width:100%; background:#555;">Закрити</button>
+            `;
+            document.body.appendChild(panel);
+        }
+
+        async function broadcastRedBanner() {
+            await mySupabase.from('announcements').insert([{
+                login: 'АДМІН',
+                message: '🚨 ЗАРАЗ БУДЕ ОНОВЛЕННЯ! Сторінка перезавантажиться автоматично.'
+            }]);
+            alert('Червона стрічка надіслана всім!');
+        }
+
+        async function forceReloadAll() {
+            if (!confirm('Ти впевнений, що хочеш перезавантажити сторінку ВСІМ користувачам?')) return;
+
+            await mySupabase.from('announcements').insert([{
+                login: 'АДМІН',
+                message: '🔄 ПЕРЕЗАВАНТАЖЕННЯ! Оновлюй сторінку.'
+            }]);
+            
+            // Додатково можна надіслати спеціальне повідомлення, але для простоти використовуємо announcements
+            alert('Команда на перезавантаження надіслана!');
+        }
+
+        async function changeUserBalance() {
+            const target = document.getElementById('admin-target-user').value.trim();
+            const newBalance = parseFloat(document.getElementById('admin-new-balance').value);
+
+            if (!target || isNaN(newBalance)) {
+                alert('Введи логін і суму!');
+                return;
+            }
+
+            await mySupabase.from('user_money').upsert({
+                login: target,
+                money: newBalance
+            });
+
+            alert(`Баланс користувача ${target} змінено на ${newBalance}$`);
         }
     </script>
 </body>
